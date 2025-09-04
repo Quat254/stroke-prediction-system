@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Details - Omeka{% endblock %}
+
+{% block content %}
+<div class="card" id="report-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="{{ url_for('static', filename='images/omeka_logo_new.png') }}" alt="Omeka" style="height: 50px; width: auto;">
+            <h2>📋 Detailed Assessment Report</h2>
+        </div>
+        <div>
+            <button onclick="window.print()" class="btn btn-secondary">🖨️ Print Report</button>
+            <button onclick="downloadReport()" class="btn btn-secondary" style="margin-left: 10px;">📥 Download PDF</button>
+            <a href="{{ url_for('history') }}" class="btn btn-secondary" style="margin-left: 10px;">← Back to History</a>
+        </div>
+    </div>
+    
+    <!-- Assessment Header -->
+    <div style="background: linear-gradient(45deg, #228B22, #1e3a5f); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <div class="grid-2">
+            <div>
+                <h3 style="margin-bottom: 10px;">📊 Assessment Overview</h3>
+                <p><strong>Patient Name:</strong> {{ session.get('full_name', 'Patient') }}</p>
+                <p><strong>Assessment ID:</strong> {{ assessment[0] }}</p>
+                <p><strong>Patient ID:</strong> {{ assessment[2] or 'N/A' }}</p>
+                <p><strong>Date:</strong> {{ assessment[17][:19] }}</p>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">
+                    {% if assessment[14] == 'Low' %}🟢
+                    {% elif assessment[14] == 'Moderate' %}🟡
+                    {% elif assessment[14] == 'High' %}🔴
+                    {% else %}🚨{% endif %}
+                </div>
+                <h3>{{ assessment[14] }} Risk</h3>
+                <p>Score: {{ "%.3f"|format(assessment[13]) }}/1.000</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Patient Information -->
+    <div class="grid-2">
+        <div class="card" style="margin: 0;">
+            <h3 style="color: #228B22; margin-bottom: 15px;">👤 Patient Information</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><strong>Age:</strong> {{ assessment[3] }} years</div>
+                    <div><strong>Gender:</strong> {{ assessment[4] }}</div>
+                    <div><strong>Marital Status:</strong> {{ assessment[7] }}</div>
+                    <div><strong>Work Type:</strong> {{ assessment[8] }}</div>
+                    <div><strong>Residence:</strong> {{ assessment[9] }}</div>
+                    <div><strong>Smoking Status:</strong> {{ assessment[12] }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin: 0;">
+            <h3 style="color: #228B22; margin-bottom: 15px;">🏥 Medical Information</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><strong>Hypertension:</strong> 
+                        <span style="color: {{ 'red' if assessment[5] == 1 else 'green' }};">
+                            {{ 'Yes' if assessment[5] == 1 else 'No' }}
+                        </span>
+                    </div>
+                    <div><strong>Heart Disease:</strong> 
+                        <span style="color: {{ 'red' if assessment[6] == 1 else 'green' }};">
+                            {{ 'Yes' if assessment[6] == 1 else 'No' }}
+                        </span>
+                    </div>
+                    <div><strong>Glucose Level:</strong> 
+                        <span style="color: {{ 'red' if assessment[10] >= 126 else 'orange' if assessment[10] >= 100 else 'green' }};">
+                            {{ assessment[10] }} mg/dL
+                        </span>
+                    </div>
+                    <div><strong>BMI:</strong> 
+                        <span style="color: {{ 'red' if assessment[11] >= 30 else 'orange' if assessment[11] >= 25 else 'green' }};">
+                            {{ assessment[11] }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Assessment Results -->
+    <div class="card">
+        <h3 style="color: #228B22; margin-bottom: 20px;">🎯 Risk Assessment Results</h3>
+        
+        <!-- Risk Level Display -->
+        <div class="risk-level risk-{{ assessment[14].lower().replace(' ', '-') }}" style="margin-bottom: 20px;">
+            {% if assessment[14] == 'Very Low' %}🟢 Very Low Risk
+            {% elif assessment[14] == 'Low' %}🟢 Low Risk
+            {% elif assessment[14] == 'Moderate' %}🟡 Moderate Risk
+            {% elif assessment[14] == 'High' %}🟠 High Risk
+            {% elif assessment[14] == 'Very High' %}🔴 Very High Risk
+            {% elif assessment[14] == 'Critical' %}🚨 Critical Risk
+            {% else %}{{ assessment[14] }} Risk{% endif %}
+            <br><small>Risk Score: {{ "%.4f"|format(assessment[13]) }}/1.0000</small>
+        </div>
+        
+        <!-- Enhanced Risk Score Visualization -->
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h4 style="color: #1e3a5f; margin-bottom: 15px;">📊 Enhanced Risk Score Analysis</h4>
+            
+            <!-- Risk Level Indicator -->
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="width: 150px;"><strong>Overall Risk Score:</strong></div>
+                    <div style="flex: 1; background: #e9ecef; height: 25px; border-radius: 12px; position: relative; margin-right: 15px;">
+                        <div style="background: {% if assessment[13] < 0.15 %}#28a745{% elif assessment[13] < 0.30 %}#20c997{% elif assessment[13] < 0.50 %}#ffc107{% elif assessment[13] < 0.70 %}#fd7e14{% elif assessment[13] < 0.85 %}#dc3545{% else %}#6f42c1{% endif %}; height: 100%; width: {{ (assessment[13] * 100)|round }}%; border-radius: 12px; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="font-weight: bold; font-size: 18px;">{{ "%.4f"|format(assessment[13]) }}</div>
+                </div>
+                
+                <!-- Risk Level Thresholds -->
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6c757d; margin-bottom: 10px;">
+                    <span>Very Low (0.00-0.15)</span>
+                    <span>Low (0.15-0.30)</span>
+                    <span>Moderate (0.30-0.50)</span>
+                    <span>High (0.50-0.70)</span>
+                    <span>Very High (0.70-0.85)</span>
+                    <span>Critical (0.85-1.00)</span>
+                </div>
+            </div>
+            
+            <!-- Individual Risk Factor Contributions -->
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+                <h5 style="color: #1e3a5f; margin-bottom: 15px;">Risk Factor Contributions</h5>
+                
+                <!-- Age Factor -->
+                {% set age_score = 0 %}
+                {% if assessment[3] >= 80 %}{% set age_score = 0.20 %}
+                {% elif assessment[3] >= 70 %}{% set age_score = 0.16 %}
+                {% elif assessment[3] >= 60 %}{% set age_score = 0.12 %}
+                {% elif assessment[3] >= 50 %}{% set age_score = 0.06 %}
+                {% elif assessment[3] >= 40 %}{% set age_score = 0.02 %}
+                {% endif %}
+                
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 150px; font-size: 14px;">Age ({{ assessment[3] }} years):</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if age_score >= 0.15 %}#dc3545{% elif age_score >= 0.10 %}#fd7e14{% elif age_score >= 0.05 %}#ffc107{% else %}#28a745{% endif %}; height: 100%; width: {{ (age_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(age_score) }}</div>
+                </div>
+                
+                <!-- Hypertension -->
+                {% set hyp_score = 0.18 if assessment[5] == 1 else 0 %}
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 150px; font-size: 14px;">Hypertension:</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if hyp_score > 0 %}#dc3545{% else %}#28a745{% endif %}; height: 100%; width: {{ (hyp_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(hyp_score) }}</div>
+                </div>
+                
+                <!-- Heart Disease -->
+                {% set heart_score = 0.16 if assessment[6] == 1 else 0 %}
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 150px; font-size: 14px;">Heart Disease:</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if heart_score > 0 %}#dc3545{% else %}#28a745{% endif %}; height: 100%; width: {{ (heart_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(heart_score) }}</div>
+                </div>
+                
+                <!-- Glucose Level -->
+                {% set glucose_score = 0 %}
+                {% if assessment[10] >= 250 %}{% set glucose_score = 0.14 %}
+                {% elif assessment[10] >= 180 %}{% set glucose_score = 0.084 %}
+                {% elif assessment[10] >= 126 %}{% set glucose_score = 0.042 %}
+                {% elif assessment[10] >= 100 %}{% set glucose_score = 0.021 %}
+                {% endif %}
+                
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 150px; font-size: 14px;">Glucose ({{ assessment[10] }} mg/dL):</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if glucose_score >= 0.10 %}#dc3545{% elif glucose_score >= 0.05 %}#fd7e14{% elif glucose_score > 0 %}#ffc107{% else %}#28a745{% endif %}; height: 100%; width: {{ (glucose_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(glucose_score) }}</div>
+                </div>
+                
+                <!-- BMI -->
+                {% set bmi_score = 0 %}
+                {% if assessment[11] >= 40 %}{% set bmi_score = 0.12 %}
+                {% elif assessment[11] >= 35 %}{% set bmi_score = 0.096 %}
+                {% elif assessment[11] >= 30 %}{% set bmi_score = 0.072 %}
+                {% elif assessment[11] >= 25 %}{% set bmi_score = 0.036 %}
+                {% elif assessment[11] < 18.5 %}{% set bmi_score = 0.012 %}
+                {% endif %}
+                
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 150px; font-size: 14px;">BMI ({{ assessment[11] }}):</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if bmi_score >= 0.10 %}#dc3545{% elif bmi_score >= 0.05 %}#fd7e14{% elif bmi_score > 0 %}#ffc107{% else %}#28a745{% endif %}; height: 100%; width: {{ (bmi_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(bmi_score) }}</div>
+                </div>
+                
+                <!-- Smoking -->
+                {% set smoking_score = 0 %}
+                {% if assessment[12] == 'smokes' %}{% set smoking_score = 0.12 %}
+                {% elif assessment[12] == 'formerly smoked' %}{% set smoking_score = 0.048 %}
+                {% elif assessment[12] == 'Unknown' %}{% set smoking_score = 0.024 %}
+                {% endif %}
+                
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 150px; font-size: 14px;">Smoking ({{ assessment[12] }}):</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if smoking_score >= 0.10 %}#dc3545{% elif smoking_score >= 0.05 %}#fd7e14{% elif smoking_score > 0 %}#ffc107{% else %}#28a745{% endif %}; height: 100%; width: {{ (smoking_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(smoking_score) }}</div>
+                </div>
+                
+                <!-- Other factors -->
+                {% set work_score = 0.032 if assessment[8] == 'Self-employed' else 0.024 if assessment[8] == 'Private' else 0 %}
+                {% set residence_score = 0.01 if assessment[9] == 'Urban' else 0 %}
+                {% set gender_score = 0.012 if assessment[4] == 'Male' else 0 %}
+                
+                <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                    <div style="width: 150px; font-size: 14px;">Work Type:</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if work_score > 0 %}#ffc107{% else %}#28a745{% endif %}; height: 100%; width: {{ (work_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(work_score) }}</div>
+                </div>
+                
+                <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                    <div style="width: 150px; font-size: 14px;">Residence:</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if residence_score > 0 %}#ffc107{% else %}#28a745{% endif %}; height: 100%; width: {{ (residence_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(residence_score) }}</div>
+                </div>
+                
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 150px; font-size: 14px;">Gender:</div>
+                    <div style="flex: 1; background: #e9ecef; height: 18px; border-radius: 9px; position: relative; margin-right: 10px;">
+                        <div style="background: {% if gender_score > 0 %}#ffc107{% else %}#28a745{% endif %}; height: 100%; width: {{ (gender_score * 500)|round }}%; border-radius: 9px;"></div>
+                    </div>
+                    <div style="font-size: 14px; width: 60px;">{{ "%.3f"|format(gender_score) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Factors -->
+    {% if risk_factors %}
+    <div class="card">
+        <h3 style="color: #228B22; margin-bottom: 15px;">⚠️ Identified Risk Factors</h3>
+        <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 5px solid #ffc107;">
+            <ul style="margin: 0; padding-left: 20px;">
+                {% for factor in risk_factors %}
+                <li style="margin-bottom: 8px; color: #856404;"><strong>{{ factor }}</strong></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recommendations -->
+    {% if recommendations %}
+    <div class="card">
+        <h3 style="color: #228B22; margin-bottom: 15px;">💡 Personalized Recommendations</h3>
+        <div style="background: #d4edda; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745;">
+            <ol style="margin: 0; padding-left: 20px;">
+                {% for recommendation in recommendations %}
+                <li style="margin-bottom: 12px; color: #155724; {{ 'font-weight: bold;' if '🚨' in recommendation else '' }}">
+                    {{ recommendation }}
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Emergency Information -->
+    {% if assessment[14] in ['High', 'Very High', 'Critical'] %}
+    <div class="card">
+        <h3 style="color: #dc3545; margin-bottom: 15px;">
+            {% if assessment[14] == 'Critical' %}🚨 CRITICAL - IMMEDIATE MEDICAL ATTENTION REQUIRED
+            {% elif assessment[14] == 'Very High' %}🚨 URGENT MEDICAL ATTENTION REQUIRED
+            {% else %}⚠️ HIGH RISK - MEDICAL CONSULTATION NEEDED{% endif %}
+        </h3>
+        <div style="background: #f8d7da; padding: 20px; border-radius: 10px; border-left: 5px solid #dc3545;">
+            <p style="color: #721c24; font-weight: bold; margin-bottom: 15px;">
+                Your assessment indicates {{ assessment[14].lower() }} stroke risk. Please take the following actions:
+            </p>
+            <ul style="color: #721c24; margin: 0; padding-left: 20px;">
+                {% if assessment[14] == 'Critical' %}
+                <li><strong>IMMEDIATE:</strong> Seek emergency medical attention within 24 hours</li>
+                <li><strong>URGENT:</strong> Contact your healthcare provider immediately</li>
+                <li><strong>CRITICAL:</strong> Consider emergency room evaluation if symptoms present</li>
+                <li><strong>ESSENTIAL:</strong> Comprehensive cardiovascular assessment required</li>
+                {% elif assessment[14] == 'Very High' %}
+                <li>Schedule appointment with healthcare provider within 2-3 days</li>
+                <li>Discuss assessment results with medical professional urgently</li>
+                <li>Consider comprehensive cardiovascular evaluation</li>
+                <li>Implement immediate lifestyle changes</li>
+                {% else %}
+                <li>Schedule appointment with healthcare provider within 1 week</li>
+                <li>Discuss your assessment results with a medical professional</li>
+                <li>Consider cardiovascular screening</li>
+                <li>Implement recommended lifestyle modifications</li>
+                {% endif %}
+                <li>Learn and watch for stroke warning signs (F.A.S.T.)</li>
+                <li>Do not delay seeking professional medical care</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- F.A.S.T. Information -->
+    <div class="card">
+        <h3 style="color: #228B22; margin-bottom: 15px;">🚨 Stroke Warning Signs - F.A.S.T.</h3>
+        <div class="grid-2">
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+                <h4 style="color: #721c24; margin-bottom: 10px;">F - FACE</h4>
+                <p style="color: #721c24; font-size: 14px;">Face drooping, numbness, or uneven smile</p>
+            </div>
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+                <h4 style="color: #721c24; margin-bottom: 10px;">A - ARMS</h4>
+                <p style="color: #721c24; font-size: 14px;">Arm weakness, numbness, or difficulty raising both arms</p>
+            </div>
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+                <h4 style="color: #721c24; margin-bottom: 10px;">S - SPEECH</h4>
+                <p style="color: #721c24; font-size: 14px;">Speech difficulty, slurred speech, or confusion</p>
+            </div>
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+                <h4 style="color: #721c24; margin-bottom: 10px;">T - TIME</h4>
+                <p style="color: #721c24; font-size: 14px;">Time to call emergency services immediately!</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Footer -->
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center; border-top: 3px solid #d4af37;">
+        <img src="{{ url_for('static', filename='images/omeka_logo_new.png') }}" alt="Omeka" style="height: 40px; width: auto; margin-bottom: 10px;">
+        <p style="color: #6c757d; margin-bottom: 10px;">
+            <strong>Assessment Generated:</strong> {{ assessment[17][:19] }} | 
+            <strong>Report ID:</strong> {{ assessment[0] }}
+        </p>
+        <p style="color: #6c757d; font-size: 14px;">
+            &copy; 2025 Omeka
+        </p>
+    </div>
+</div>
+
+<div class="text-center mt-20">
+    <a href="{{ url_for('assessment') }}" class="btn">🔍 New Assessment</a>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary" style="margin-left: 10px;">📊 View History</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="margin-left: 10px;">🏠 Dashboard</a>
+</div>
+
+<style>
+.risk-level {
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.risk-very-low { 
+    background: linear-gradient(45deg, #d4edda, #c3e6cb); 
+    color: #155724; 
+    border: 2px solid #28a745;
+}
+.risk-low { 
+    background: linear-gradient(45deg, #d1ecf1, #bee5eb); 
+    color: #0c5460; 
+    border: 2px solid #17a2b8;
+}
+.risk-moderate { 
+    background: linear-gradient(45deg, #fff3cd, #ffeaa7); 
+    color: #856404; 
+    border: 2px solid #ffc107;
+}
+.risk-high { 
+    background: linear-gradient(45deg, #fed7aa, #fdcb6e); 
+    color: #8a4a00; 
+    border: 2px solid #fd7e14;
+}
+.risk-very-high { 
+    background: linear-gradient(45deg, #f8d7da, #f5c6cb); 
+    color: #721c24; 
+    border: 2px solid #dc3545;
+    animation: pulse-red 2s infinite;
+}
+.risk-critical { 
+    background: linear-gradient(45deg, #e2a2ff, #d63384); 
+    color: #2d0a26; 
+    border: 3px solid #6f42c1;
+    animation: pulse-critical 1.5s infinite;
+    box-shadow: 0 0 20px rgba(111, 66, 193, 0.5);
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+@keyframes pulse-critical {
+    0% { 
+        box-shadow: 0 0 0 0 rgba(111, 66, 193, 0.9);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 0 15px rgba(111, 66, 193, 0);
+        transform: scale(1.02);
+    }
+    100% { 
+        box-shadow: 0 0 0 0 rgba(111, 66, 193, 0);
+        transform: scale(1);
+    }
+}
+
+@media print {
+    .btn, nav, .text-center.mt-20 {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    
+    .risk-level {
+        animation: none !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth animations
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'all 0.5s ease';
+        
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Highlight urgent recommendations
+    const recommendations = document.querySelectorAll('li');
+    recommendations.forEach(rec => {
+        if (rec.textContent.includes('🚨')) {
+            rec.style.background = '#f8d7da';
+            rec.style.padding = '8px';
+            rec.style.borderRadius = '5px';
+            rec.style.marginBottom = '10px';
+        }
+    });
+});
+
+// Function to download the report as PDF
+function downloadReport() {
+    // Create a filename with patient name and date
+    const patientName = "{{ session.get('full_name', 'Patient') }}".replace(/\s+/g, '_');
+    const date = new Date().toISOString().slice(0, 10);
+    const filename = `Omeka_Assessment_${patientName}_${date}.pdf`;
+    
+    // Show loading message
+    const loadingMsg = document.createElement('div');
+    loadingMsg.style.position = 'fixed';
+    loadingMsg.style.top = '50%';
+    loadingMsg.style.left = '50%';
+    loadingMsg.style.transform = 'translate(-50%, -50%)';
+    loadingMsg.style.background = 'rgba(0,0,0,0.8)';
+    loadingMsg.style.color = 'white';
+    loadingMsg.style.padding = '20px';
+    loadingMsg.style.borderRadius = '10px';
+    loadingMsg.style.zIndex = '9999';
+    loadingMsg.innerHTML = '📥 Generating PDF...';
+    document.body.appendChild(loadingMsg);
+    
+    // Hide buttons for PDF generation
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(btn => btn.style.display = 'none');
+    
+    // Use html2canvas and jsPDF
+    setTimeout(() => {
+        const content = document.querySelector('.card');
+        
+        html2canvas(content, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const imgWidth = 210; // A4 width in mm
+            const pageHeight = 295; // A4 height in mm
+            const imgHeight = canvas.height * imgWidth / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+            
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+            
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+            
+            pdf.save(filename);
+            
+            // Show buttons again
+            buttons.forEach(btn => btn.style.display = 'inline-block');
+            
+            // Remove loading message
+            document.body.removeChild(loadingMsg);
+        });
+    }, 500);
+}
+</script>
+{% endblock %}

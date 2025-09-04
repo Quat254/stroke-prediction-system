@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}High-Risk Cases - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">🚨 High-Risk Cases Management</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Critical cases requiring immediate medical follow-up</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📊 High-Risk Statistics</h2>
+    {% if high_risk_cases %}
+        {% set risk_counts = {'High': 0, 'Very High': 0, 'Critical': 0} %}
+        {% for case in high_risk_cases %}
+            {% set _ = risk_counts.update({case[6]: risk_counts.get(case[6], 0) + 1}) %}
+        {% endfor %}
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 20px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <div style="font-size: 2rem; font-weight: bold; color: #856404;">{{ risk_counts.get('High', 0) }}</div>
+                <div style="color: #856404; font-weight: bold;">🟠 High Risk Cases</div>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; background: #f8d7da; border-radius: 8px; border-left: 4px solid #dc3545;">
+                <div style="font-size: 2rem; font-weight: bold; color: #721c24;">{{ risk_counts.get('Very High', 0) }}</div>
+                <div style="color: #721c24; font-weight: bold;">🔴 Very High Risk</div>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; background: #d1ecf1; border-radius: 8px; border-left: 4px solid #0c5460;">
+                <div style="font-size: 2rem; font-weight: bold; color: #0c5460;">{{ risk_counts.get('Critical', 0) }}</div>
+                <div style="color: #0c5460; font-weight: bold;">🚨 Critical Cases</div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🚨 High-Risk Patient Cases</h2>
+    {% if high_risk_cases %}
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="searchInput" placeholder="🔍 Search by patient name, username, or risk level..." 
+                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;"
+                   onkeyup="filterCases()">
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table id="casesTable" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Patient Info</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Demographics</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Risk Assessment</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Key Risk Factors</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Assessment Date</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in high_risk_cases %}
+                        <tr style="border-bottom: 1px solid #dee2e6;" class="case-row">
+                            <td style="padding: 12px;" class="patient-info">
+                                <div style="font-weight: bold; color: #1e3a5f;" class="patient-name">{{ case[2] }}</div>
+                                <div style="color: #666; font-size: 14px;" class="username">@{{ case[1] }}</div>
+                                <div style="color: #666; font-size: 12px;">{{ case[3] }}</div>
+                            </td>
+                            <td style="padding: 12px;">
+                                <div><strong>Age:</strong> {{ case[4] }}</div>
+                                <div><strong>Gender:</strong> {{ case[5] }}</div>
+                            </td>
+                            <td style="padding: 12px;" class="risk-level">
+                                <div style="margin-bottom: 5px;">
+                                    <span style="color: {% if case[6] == 'High' %}#fd7e14{% elif case[6] == 'Very High' %}#dc3545{% else %}#dc3545{% endif %}; font-weight: bold; font-size: 16px;">
+                                        {% if case[6] == 'High' %}🟠 High Risk
+                                        {% elif case[6] == 'Very High' %}🔴 Very High Risk
+                                        {% elif case[6] == 'Critical' %}🚨 Critical Risk
+                                        {% else %}{{ case[6] }}{% endif %}
+                                    </span>
+                                </div>
+                                <div style="font-weight: bold; color: #dc3545; font-size: 18px;">{{ "%.1f"|format(case[7]) }}%</div>
+                            </td>
+                            <td style="padding: 12px;">
+                                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                    {% if case[10] == 1 %}
+                                        <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px;">Hypertension</span>
+                                    {% endif %}
+                                    {% if case[11] == 1 %}
+                                        <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px;">Heart Disease</span>
+                                    {% endif %}
+                                    {% if case[12] > 126 %}
+                                        <span style="background: #ffc107; color: #000; padding: 2px 6px; border-radius: 12px; font-size: 11px;">High Glucose</span>
+                                    {% endif %}
+                                    {% if case[13] > 30 %}
+                                        <span style="background: #fd7e14; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px;">High BMI</span>
+                                    {% endif %}
+                                </div>
+                                <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                                    Glucose: {{ "%.1f"|format(case[12]) }} | BMI: {{ "%.1f"|format(case[13]) }}
+                                </div>
+                            </td>
+                            <td style="padding: 12px;">
+                                <div style="font-size: 14px;">{{ case[8][:10] if case[8] else 'N/A' }}</div>
+                                <div style="font-size: 12px; color: #666;">{{ case[8][11:16] if case[8] and len(case[8]) > 11 else '' }}</div>
+                            </td>
+                            <td style="padding: 12px;">
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <button onclick="contactPatient('{{ case[3] }}', '{{ case[2] }}')" 
+                                            class="btn" 
+                                            style="background: #007bff; color: white; padding: 6px 12px; font-size: 12px;">
+                                        📧 Contact Patient
+                                    </button>
+                                    <button onclick="markFollowedUp({{ case[0] }})" 
+                                            class="btn" 
+                                            style="background: #28a745; color: white; padding: 6px 12px; font-size: 12px;">
+                                        ✅ Mark Followed Up
+                                    </button>
+                                    <button onclick="viewFullAssessment({{ case[0] }})" 
+                                            class="btn btn-secondary" 
+                                            style="padding: 6px 12px; font-size: 12px;">
+                                        📋 View Details
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center; color: #666;">
+            <p>Total High-Risk Cases: <span id="totalCount">{{ high_risk_cases|length }}</span></p>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h3 style="color: #155724; margin-bottom: 10px;">🎉 Great News!</h3>
+            <p style="color: #155724; margin: 0;">No high-risk cases requiring immediate follow-up at this time.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function filterCases() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('casesTable');
+    const rows = table.getElementsByClassName('case-row');
+    let visibleCount = 0;
+    
+    for (let i = 0; i < rows.length; i++) {
+        const patientName = rows[i].getElementsByClassName('patient-name')[0].textContent.toLowerCase();
+        const username = rows[i].getElementsByClassName('username')[0].textContent.toLowerCase();
+        const riskLevel = rows[i].getElementsByClassName('risk-level')[0].textContent.toLowerCase();
+        
+        if (patientName.includes(filter) || username.includes(filter) || riskLevel.includes(filter)) {
+            rows[i].style.display = '';
+            visibleCount++;
+        } else {
+            rows[i].style.display = 'none';
+        }
+    }
+    
+    document.getElementById('totalCount').textContent = visibleCount;
+}
+
+function contactPatient(email, name) {
+    if (confirm(`Contact ${name} at ${email}?`)) {
+        // In a real implementation, this would open email client or send notification
+        alert(`Email client would open to contact ${name} at ${email}\n\nThis would typically:\n- Open default email client\n- Pre-fill subject: "Stroke Risk Assessment Follow-up"\n- Include patient care instructions`);
+    }
+}
+
+function markFollowedUp(assessmentId) {
+    if (confirm('Mark this high-risk case as followed up?')) {
+        fetch(`/admin/mark_followed_up/${assessmentId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Case marked as followed up successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the follow-up status.');
+        });
+    }
+}
+
+function viewFullAssessment(assessmentId) {
+    // In a real implementation, this would open a detailed view
+    alert(`This would open a detailed view of assessment ID: ${assessmentId}\n\nWould show:\n- Complete risk factor analysis\n- Detailed recommendations\n- Patient history\n- Medical notes`);
+}
+</script>
+{% endblock %}

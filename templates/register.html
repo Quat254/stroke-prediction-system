@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Omeka{% endblock %}
+
+{% block content %}
+<style>
+    .register-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+        padding: 20px 0;
+    }
+    
+    .register-card {
+        background: rgba(30, 58, 95, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+        width: 900px;
+        display: flex;
+        color: #fff;
+    }
+    
+    .register-image {
+        flex: 0.4;
+        background-image: url('https://images.unsplash.com/photo-1584982751601-97dcc096659c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80');
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+    
+    .register-image::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(34, 139, 34, 0.8) 0%, rgba(30, 58, 95, 0.8) 100%);
+    }
+    
+    .register-image-content {
+        position: absolute;
+        bottom: 40px;
+        left: 40px;
+        right: 40px;
+    }
+    
+    .register-image-content h2 {
+        color: #fff;
+        font-size: 2rem;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .register-image-content p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .register-form {
+        flex: 0.6;
+        padding: 40px;
+        overflow-y: auto;
+        max-height: 90vh;
+    }
+    
+    .register-form h2 {
+        color: #fff;
+        margin-bottom: 20px;
+        font-size: 1.8rem;
+        border-bottom: 3px solid #1a6e1a;
+        padding-bottom: 10px;
+        display: inline-block;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    
+    .form-group input {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 12px;
+        border-radius: 8px;
+    }
+    
+    .form-group input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .form-group input:focus {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: #1a6e1a;
+        box-shadow: 0 0 0 2px rgba(26, 110, 26, 0.25);
+    }
+    
+    .form-group small {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.8rem;
+        margin-top: 5px;
+        display: block;
+    }
+    
+    .privacy-box {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .privacy-box h4 {
+        color: #1a6e1a;
+        margin-bottom: 10px;
+    }
+    
+    .privacy-box p {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+    }
+    
+    .terms-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .terms-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #1a6e1a;
+    }
+    
+    .terms-checkbox span {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+    }
+    
+    .register-btn {
+        background: linear-gradient(45deg, #1a6e1a, #228B22);
+        color: white;
+        padding: 15px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .register-btn:hover {
+        background: linear-gradient(45deg, #228B22, #1a6e1a);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .login-link {
+        text-align: center;
+        margin-top: 20px;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .login-link a {
+        color: #1a6e1a;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+    
+    .login-link a:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+    
+    .password-strength {
+        margin-top: 5px;
+        font-size: 0.8rem;
+    }
+    
+    @media (max-width: 992px) {
+        .register-card {
+            width: 90%;
+            flex-direction: column;
+        }
+        
+        .register-image {
+            height: 200px;
+        }
+        
+        .register-image-content {
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+        }
+        
+        .register-image-content h2 {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-image">
+            <div class="register-image-content">
+                <h2>Join Our Health Community</h2>
+                <p>Create your account to access personalized stroke risk assessments and take control of your health journey.</p>
+            </div>
+        </div>
+        
+        <div class="register-form">
+            <h2>👤 Create Your Account</h2>
+            
+            <form id="registerForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="username">👤 Username *</label>
+                        <input type="text" id="username" name="username" required placeholder="Choose a username">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">📧 Email Address *</label>
+                        <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="full_name">📝 Full Name *</label>
+                    <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name">
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="date_of_birth">🎂 Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" max="" required>
+                        <small>Must be at least three months before today</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">📞 Phone Number</label>
+                        <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567" pattern="^\(\d{3}\)\s\d{3}-\d{4}$|^\d{10}$|^\d{3}-\d{3}-\d{4}$" title="Please enter a valid phone number: (555) 123-4567, 5551234567, or 555-123-4567">
+                        <small>Format: (555) 123-4567 or 5551234567</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="emergency_contact">🚨 Emergency Contact Number *</label>
+                    <input type="tel" id="emergency_contact" name="emergency_contact" placeholder="(555) 123-4567" pattern="^\(\d{3}\)\s\d{3}-\d{4}$|^\d{10}$|^\d{3}-\d{3}-\d{4}$" required title="Please enter a valid phone number: (555) 123-4567, 5551234567, or 555-123-4567">
+                    <small>Required for emergency notifications</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">🔒 Password *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="password" name="password" required placeholder="Create a secure password" minlength="6">
+                        <button type="button" class="toggle-password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: rgba(255, 255, 255, 0.7);">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">🔒 Confirm Password *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="confirm_password" name="confirm_password" required placeholder="Confirm your password" minlength="6">
+                        <button type="button" class="toggle-password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: rgba(255, 255, 255, 0.7);">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="privacy-box">
+                    <h4>🔒 Privacy & Security</h4>
+                    <p>
+                        Your personal health information is encrypted and stored securely. We never share your data with third parties without your explicit consent.
+                    </p>
+                </div>
+                
+                <label class="terms-checkbox">
+                    <input type="checkbox" id="terms_agreement" required>
+                    <span>I agree to the Terms of Service and Privacy Policy *</span>
+                </label>
+                
+                <button type="submit" class="register-btn" id="registerBtn">
+                    🚀 Create Account
+                </button>
+                
+                <div class="login-link">
+                    <p>Already have an account? <a href="{{ url_for('login') }}">Sign In Here</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set max date for date of birth (three months before today)
+    const today = new Date();
+    today.setMonth(today.getMonth() - 3);
+    const maxDate = today.toISOString().split('T')[0];
+    document.getElementById('date_of_birth').setAttribute('max', maxDate);
+    
+    // Update the small text to reflect the three month requirement
+    const dobSmall = document.querySelector('label[for="date_of_birth"] + input + small');
+    if (dobSmall) {
+        dobSmall.textContent = "Must be at least three months before today";
+    }
+    
+    // Phone number formatting
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 0) {
+            if (value.length <= 10) {
+                if (value.length > 6) {
+                    value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
+                } else if (value.length > 3) {
+                    value = `(${value.substring(0, 3)}) ${value.substring(3)}`;
+                } else {
+                    value = `(${value}`;
+                }
+            } else {
+                value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6, 10)}`;
+            }
+        }
+        e.target.value = value;
+    });
+    
+    // Emergency contact phone formatting
+    const emergencyContactInput = document.getElementById('emergency_contact');
+    emergencyContactInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 0) {
+            if (value.length <= 10) {
+                if (value.length > 6) {
+                    value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
+                } else if (value.length > 3) {
+                    value = `(${value.substring(0, 3)}) ${value.substring(3)}`;
+                } else {
+                    value = `(${value}`;
+                }
+            } else {
+                value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6, 10)}`;
+            }
+        }
+        e.target.value = value;
+    });
+
+    // Password toggle functionality
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const input = this.parentNode.querySelector('input');
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
+
+    // Password strength indicator
+    document.getElementById('password').addEventListener('input', function() {
+        const password = this.value;
+        const strength = calculatePasswordStrength(password);
+        
+        // Remove existing strength indicator
+        const existingIndicator = document.querySelector('.password-strength');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+        
+        if (password.length > 0) {
+            const indicator = document.createElement('div');
+            indicator.className = 'password-strength';
+            
+            if (strength < 3) {
+                indicator.style.color = '#ff6b6b';
+                indicator.textContent = '🔴 Weak password';
+            } else if (strength < 5) {
+                indicator.style.color = '#ffd166';
+                indicator.textContent = '🟡 Medium password';
+            } else {
+                indicator.style.color = '#06d6a0';
+                indicator.textContent = '🟢 Strong password';
+            }
+            
+            this.parentNode.appendChild(indicator);
+        }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData);
+        
+        // Validate passwords match
+        if (data.password !== data.confirm_password) {
+            showAlert('Passwords do not match', 'error');
+            return;
+        }
+        
+        // Validate terms agreement
+        if (!document.getElementById('terms_agreement').checked) {
+            showAlert('Please agree to the Terms of Service and Privacy Policy', 'error');
+            return;
+        }
+        
+        // Validate phone number format
+        const phoneRegex = /^\(\d{3}\)\s\d{3}-\d{4}$|^\d{10}$|^\d{3}-\d{3}-\d{4}$/;
+        if (data.phone && !phoneRegex.test(data.phone)) {
+            showAlert('Please enter a valid phone number format', 'error');
+            return;
+        }
+        
+        const registerBtn = document.getElementById('registerBtn');
+        registerBtn.disabled = true;
+        registerBtn.textContent = '🔄 Creating Account...';
+        
+        try {
+            const response = await makeRequest('{{ url_for("register") }}', data);
+            
+            if (response.success) {
+                showAlert('Account created successfully! Please sign in.', 'success');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("login") }}';
+                }, 2000);
+            } else {
+                showAlert(response.message, 'error');
+            }
+        } catch (error) {
+            showAlert('Registration failed. Please try again.', 'error');
+        } finally {
+            registerBtn.disabled = false;
+            registerBtn.textContent = '🚀 Create Account';
+        }
+    });
+});
+
+function calculatePasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
+}
+</script>
+{% endblock %}

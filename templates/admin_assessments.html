@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Management - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">📊 Assessment Management</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">View and analyze all stroke risk assessments</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_templates') }}" class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f);">
+                📝 Manage Templates
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📈 Assessment Overview</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #228B22;">
+            <div style="font-size: 2rem; font-weight: bold; color: #228B22;">{{ total_assessments }}</div>
+            <div style="color: #666; font-weight: bold;">Total Assessments</div>
+        </div>
+        {% for risk_level, count in risk_distribution %}
+            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid {% if risk_level in ['Very Low', 'Low'] %}#228B22{% elif risk_level == 'Moderate' %}#d4af37{% elif risk_level == 'High' %}#fd7e14{% else %}#dc3545{% endif %};">
+                <div style="font-size: 2rem; font-weight: bold; color: {% if risk_level in ['Very Low', 'Low'] %}#228B22{% elif risk_level == 'Moderate' %}#d4af37{% elif risk_level == 'High' %}#fd7e14{% else %}#dc3545{% endif %};">{{ count }}</div>
+                <div style="color: #666; font-weight: bold;">{{ risk_level }} Risk</div>
+                <div style="color: #999; font-size: 12px;">{{ "%.1f"|format((count / total_assessments * 100) if total_assessments > 0 else 0) }}%</div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>🎯 Leading Stroke Risk Factors Analysis</h2>
+    <p style="color: #666; margin-bottom: 20px;">Analysis of the most common risk factors among patients in the system</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545;">
+            <h3 style="color: #dc3545; margin-bottom: 10px;">🩸 Hypertension</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #dc3545;">{{ stroke_causes.hypertension }}%</div>
+            <p style="color: #666; font-size: 14px;">of patients have high blood pressure</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #fd7e14;">
+            <h3 style="color: #fd7e14; margin-bottom: 10px;">❤️ Heart Disease</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #fd7e14;">{{ stroke_causes.heart_disease }}%</div>
+            <p style="color: #666; font-size: 14px;">of patients have heart conditions</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #d4af37;">
+            <h3 style="color: #d4af37; margin-bottom: 10px;">🍯 High Glucose</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #d4af37;">{{ stroke_causes.high_glucose }}%</div>
+            <p style="color: #666; font-size: 14px;">have glucose levels > 200 mg/dL</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #6f42c1;">
+            <h3 style="color: #6f42c1; margin-bottom: 10px;">⚖️ Obesity</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #6f42c1;">{{ stroke_causes.obesity }}%</div>
+            <p style="color: #666; font-size: 14px;">have BMI > 30 (obese)</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #6c757d;">
+            <h3 style="color: #6c757d; margin-bottom: 10px;">🚬 Smoking</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #6c757d;">{{ stroke_causes.smoking }}%</div>
+            <p style="color: #666; font-size: 14px;">are current or former smokers</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+            <h3 style="color: #17a2b8; margin-bottom: 10px;">👴 Age-Related</h3>
+            <div style="font-size: 2rem; font-weight: bold; color: #17a2b8;">{{ stroke_causes.age_related }}%</div>
+            <p style="color: #666; font-size: 14px;">are over 65 years old</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📋 Recent Assessments</h2>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Patient</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Age</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Gender</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Risk Level</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Risk Score</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Key Risk Factors</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assessment in assessments[:20] %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 12px; font-weight: bold; color: #1e3a5f;">{{ assessment[2] }}</td>
+                        <td style="padding: 12px;">{{ assessment[3] }}</td>
+                        <td style="padding: 12px;">{{ assessment[13] }}</td>
+                        <td style="padding: 12px;">
+                            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
+                                         {% if assessment[4] in ['Very Low', 'Low'] %}background: #d4edda; color: #155724;
+                                         {% elif assessment[4] == 'Moderate' %}background: #fff3cd; color: #856404;
+                                         {% elif assessment[4] == 'High' %}background: #ffeaa7; color: #856404;
+                                         {% else %}background: #f8d7da; color: #721c24;{% endif %}">
+                                {{ assessment[4] }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px;">
+                            <span style="font-weight: bold; color: {% if assessment[5] < 30 %}#228B22{% elif assessment[5] < 60 %}#d4af37{% else %}#dc3545{% endif %};">
+                                {{ "%.1f"|format(assessment[5]) }}%
+                            </span>
+                        </td>
+                        <td style="padding: 12px;">
+                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                {% if assessment[7] %}
+                                    <span style="background: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 3px; font-size: 11px;">HTN</span>
+                                {% endif %}
+                                {% if assessment[8] %}
+                                    <span style="background: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 3px; font-size: 11px;">HD</span>
+                                {% endif %}
+                                {% if assessment[9] > 200 %}
+                                    <span style="background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 3px; font-size: 11px;">HG</span>
+                                {% endif %}
+                                {% if assessment[10] > 30 %}
+                                    <span style="background: #e2e3e5; color: #383d41; padding: 2px 6px; border-radius: 3px; font-size: 11px;">OB</span>
+                                {% endif %}
+                                {% if assessment[11] in ['smokes', 'formerly smoked'] %}
+                                    <span style="background: #d1ecf1; color: #0c5460; padding: 2px 6px; border-radius: 3px; font-size: 11px;">SM</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td style="padding: 12px;">{{ assessment[6][:10] if assessment[6] else 'N/A' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if assessments|length > 20 %}
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="color: #666;">Showing 20 most recent assessments out of {{ assessments|length }} total</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📝 Assessment Templates</h2>
+    <p style="color: #666; margin-bottom: 20px;">Manage assessment templates for standardized evaluations</p>
+    
+    {% if templates %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            {% for template in templates %}
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid {% if template[3] %}#228B22{% else %}#6c757d{% endif %};">
+                    <h4 style="color: #1e3a5f; margin-bottom: 10px;">{{ template[1] }}</h4>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">{{ template[2] if template[2] else 'No description available' }}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
+                                     {% if template[3] %}background: #d4edda; color: #155724;{% else %}background: #f8d7da; color: #721c24;{% endif %}">
+                            {% if template[3] %}✅ Active{% else %}❌ Inactive{% endif %}
+                        </span>
+                        <small style="color: #999;">{{ template[4][:10] if template[4] else 'N/A' }}</small>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <p>No assessment templates found. <a href="{{ url_for('admin_templates') }}" style="color: #228B22;">Create your first template</a></p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+/* Legend for risk factor abbreviations */
+.risk-legend {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border-left: 4px solid #17a2b8;
+}
+
+.risk-legend h4 {
+    color: #17a2b8;
+    margin-bottom: 10px;
+}
+
+.risk-legend div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+}
+
+.risk-legend span {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+</style>
+
+<div class="risk-legend">
+    <h4>📖 Risk Factor Legend</h4>
+    <div>
+        <span style="background: #f8d7da; color: #721c24;">HTN = Hypertension</span>
+        <span style="background: #f8d7da; color: #721c24;">HD = Heart Disease</span>
+        <span style="background: #fff3cd; color: #856404;">HG = High Glucose</span>
+        <span style="background: #e2e3e5; color: #383d41;">OB = Obesity</span>
+        <span style="background: #d1ecf1; color: #0c5460;">SM = Smoking</span>
+    </div>
+</div>
+{% endblock %}

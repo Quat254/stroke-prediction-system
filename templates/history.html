@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment History - Omeka{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📊 Your Assessment History</h2>
+    <p style="margin-bottom: 30px; color: #1e3a5f;">Track your stroke risk assessments over time and monitor your health progress.</p>
+    
+    {% if assessments %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background: linear-gradient(45deg, #228B22, #1e3a5f); color: white;">
+                    <th style="padding: 15px; text-align: left;">Date</th>
+                    <th style="padding: 15px; text-align: left;">Patient ID</th>
+                    <th style="padding: 15px; text-align: left;">Age</th>
+                    <th style="padding: 15px; text-align: left;">Gender</th>
+                    <th style="padding: 15px; text-align: left;">Risk Level</th>
+                    <th style="padding: 15px; text-align: left;">Risk Score</th>
+                    <th style="padding: 15px; text-align: left;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assessment in assessments %}
+                <tr style="border-bottom: 1px solid #dee2e6; transition: background-color 0.3s ease;" 
+                    onmouseover="this.style.backgroundColor='#f8f9fa'" 
+                    onmouseout="this.style.backgroundColor='transparent'">
+                    <td style="padding: 12px;">{{ assessment[6][:10] }}</td>
+                    <td style="padding: 12px;">{{ assessment[1] or 'N/A' }}</td>
+                    <td style="padding: 12px;">{{ assessment[2] }}</td>
+                    <td style="padding: 12px;">{{ assessment[3] }}</td>
+                    <td style="padding: 12px;">
+                        <span style="
+                            padding: 4px 12px; 
+                            border-radius: 20px; 
+                            font-weight: bold; 
+                            font-size: 12px;
+                            {% if assessment[4] == 'Low' %}
+                                background: #d4edda; color: #155724;
+                            {% elif assessment[4] == 'Moderate' %}
+                                background: #fff3cd; color: #856404;
+                            {% elif assessment[4] == 'High' %}
+                                background: #f8d7da; color: #721c24;
+                            {% else %}
+                                background: #f5c6cb; color: #491217;
+                            {% endif %}
+                        ">
+                            {% if assessment[4] == 'Low' %}🟢{% elif assessment[4] == 'Moderate' %}🟡{% elif assessment[4] == 'High' %}🔴{% else %}🚨{% endif %} {{ assessment[4] }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <strong>{{ "%.3f"|format(assessment[5]) }}</strong>
+                    </td>
+                    <td style="padding: 12px;">
+                        <a href="{{ url_for('view_assessment', assessment_id=assessment[0]) }}" 
+                           class="btn" style="padding: 6px 12px; font-size: 14px;">
+                            👁️ View Details
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Summary Statistics -->
+    <div class="grid-2" style="margin-top: 30px;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #228B22;">
+            <h4 style="color: #228B22; margin-bottom: 15px;">📈 Assessment Summary</h4>
+            <p><strong>Total Assessments:</strong> {{ assessments|length }}</p>
+            <p><strong>Latest Assessment:</strong> {{ assessments[0][6][:10] if assessments else 'None' }}</p>
+            <p><strong>Latest Risk Level:</strong> 
+                <span style="color: {% if assessments[0][4] == 'Low' %}#28a745{% elif assessments[0][4] == 'Moderate' %}#ffc107{% else %}#dc3545{% endif %};">
+                    {{ assessments[0][4] if assessments else 'N/A' }}
+                </span>
+            </p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #1e3a5f;">
+            <h4 style="color: #1e3a5f; margin-bottom: 15px;">🎯 Risk Distribution</h4>
+            {% set risk_counts = {'Low': 0, 'Moderate': 0, 'High': 0, 'Very High': 0} %}
+            {% for assessment in assessments %}
+                {% set _ = risk_counts.update({assessment[4]: risk_counts[assessment[4]] + 1}) %}
+            {% endfor %}
+            
+            {% for level, count in risk_counts.items() %}
+                {% if count > 0 %}
+                <p><strong>{{ level }}:</strong> {{ count }} ({{ "%.1f"|format((count / assessments|length) * 100) }}%)</p>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 10px;">
+        <div style="font-size: 4rem; margin-bottom: 20px;">📊</div>
+        <h3 style="color: #6c757d; margin-bottom: 15px;">No Assessments Yet</h3>
+        <p style="color: #6c757d; margin-bottom: 30px;">You haven't completed any stroke risk assessments yet. Take your first assessment to start monitoring your health.</p>
+        <a href="{{ url_for('assessment') }}" class="btn">🔍 Take Your First Assessment</a>
+    </div>
+    {% endif %}
+</div>
+
+{% if assessments %}
+<div class="card">
+    <h2>📈 Health Trends</h2>
+    <div id="trendChart" style="height: 400px; background: #f8f9fa; border-radius: 10px; padding: 20px;">
+        <canvas id="riskTrendChart" width="100%" height="300"></canvas>
+    </div>
+    
+    <div class="grid-2" style="margin-top: 20px;">
+        <div style="background: #d4edda; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h4 style="color: #155724; margin-bottom: 10px;">📊 Trend Analysis</h4>
+            <p style="color: #155724; font-size: 14px;" id="trendAnalysis">Loading analysis...</p>
+        </div>
+        
+        <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #0c5460;">
+            <h4 style="color: #0c5460; margin-bottom: 10px;">🎯 Progress Insights</h4>
+            <p style="color: #0c5460; font-size: 14px;" id="progressInsights">Loading insights...</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>💡 Health Insights</h2>
+    <div class="grid-2">
+        {% set latest_assessment = assessments[0] %}
+        {% if latest_assessment[4] == 'Low' %}
+        <div style="background: #d4edda; padding: 20px; border-radius: 10px; border-left: 4px solid #28a745;">
+            <h4 style="color: #155724; margin-bottom: 10px;">🟢 Great Job!</h4>
+            <p style="color: #155724;">Your latest assessment shows low stroke risk. Keep maintaining your healthy lifestyle!</p>
+        </div>
+        {% elif latest_assessment[4] == 'Moderate' %}
+        <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 4px solid #ffc107;">
+            <h4 style="color: #856404; margin-bottom: 10px;">🟡 Stay Vigilant</h4>
+            <p style="color: #856404;">Your risk is moderate. Consider lifestyle improvements and regular medical check-ups.</p>
+        </div>
+        {% else %}
+        <div style="background: #f8d7da; padding: 20px; border-radius: 10px; border-left: 4px solid #dc3545;">
+            <h4 style="color: #721c24; margin-bottom: 10px;">🔴 Take Action</h4>
+            <p style="color: #721c24;">Your risk level requires attention. Please consult with a healthcare professional.</p>
+        </div>
+        {% endif %}
+        
+        <div style="background: #d1ecf1; padding: 20px; border-radius: 10px; border-left: 4px solid #0c5460;">
+            <h4 style="color: #0c5460; margin-bottom: 10px;">📅 Next Steps</h4>
+            <p style="color: #0c5460;">
+                {% if assessments|length == 1 %}
+                    Consider taking another assessment in 3-6 months to track changes.
+                {% else %}
+                    Regular assessments help monitor your health progress over time.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="text-center mt-20">
+    <a href="{{ url_for('assessment') }}" class="btn">🔍 New Assessment</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="margin-left: 10px;">📊 Dashboard</a>
+</div>
+
+<script>
+// Add interactive features
+document.addEventListener('DOMContentLoaded', function() {
+    // Add search/filter functionality
+    const table = document.querySelector('table');
+    if (table) {
+        // Add search box
+        const searchContainer = document.createElement('div');
+        searchContainer.style.marginBottom = '20px';
+        searchContainer.innerHTML = `
+            <input type="text" id="searchAssessments" placeholder="🔍 Search assessments..." 
+                   style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+        `;
+        table.parentNode.insertBefore(searchContainer, table);
+        
+        // Search functionality
+        document.getElementById('searchAssessments').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    
+    // Add export functionality
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn btn-secondary';
+    exportBtn.innerHTML = '📥 Export Data';
+    exportBtn.style.marginLeft = '10px';
+    exportBtn.onclick = exportAssessments;
+    
+    const actionContainer = document.querySelector('.text-center.mt-20');
+    if (actionContainer) {
+        actionContainer.appendChild(exportBtn);
+    }
+});
+
+function exportAssessments() {
+    const assessments = {{ assessments|tojson if assessments else '[]' }};
+    
+    if (assessments.length === 0) {
+        showAlert('No assessments to export', 'info');
+        return;
+    }
+    
+    // Create CSV content
+    const headers = ['Date', 'Patient ID', 'Age', 'Gender', 'Risk Level', 'Risk Score'];
+    const csvContent = [
+        headers.join(','),
+        ...assessments.map(assessment => [
+            assessment[6].substring(0, 10),
+            assessment[1] || 'N/A',
+            assessment[2],
+            assessment[3],
+            assessment[4],
+            assessment[5].toFixed(3)
+        ].join(','))
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stroke_assessments_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showAlert('Assessment data exported successfully!', 'success');
+}
+
+// Health Trends Chart Implementation
+document.addEventListener('DOMContentLoaded', function() {
+    // Assessment data from server
+    const assessments = {{ assessments|tojson if assessments else '[]' }};
+    
+    if (assessments.length > 0) {
+        setTimeout(() => {
+            createHealthTrendsChart(assessments);
+            generateTrendAnalysis(assessments);
+        }, 1000);
+    }
+});
+
+function createHealthTrendsChart(assessments) {
+    const canvas = document.getElementById('riskTrendChart');
+    if (!canvas) return;
+    
+    // Prepare data for chart (reverse to show chronological order)
+    const chartData = assessments.slice().reverse().map((assessment, index) => ({
+        x: assessment[6].substring(0, 10), // Date
+        y: assessment[5], // Risk score
+        riskLevel: assessment[4] // Risk level for coloring
+    }));
+    
+    drawHealthTrendsChart(canvas, chartData);
+}
+
+function drawHealthTrendsChart(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    
+    // Set canvas size
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Set up chart area
+    const padding = 60;
+    const chartWidth = width - 2 * padding;
+    const chartHeight = height - 2 * padding;
+    
+    // Draw background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(padding, padding, chartWidth, chartHeight);
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    
+    // Horizontal grid lines (risk score levels)
+    for (let i = 0; i <= 10; i++) {
+        const y = padding + (i * chartHeight / 10);
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(padding + chartWidth, y);
+        ctx.stroke();
+        
+        // Risk level indicators
+        const riskValue = 1.0 - (i * 0.1);
+        let riskColor = '#28a745'; // Low
+        if (riskValue >= 0.7) riskColor = '#dc3545'; // Very High
+        else if (riskValue >= 0.5) riskColor = '#fd7e14'; // High  
+        else if (riskValue >= 0.3) riskColor = '#ffc107'; // Moderate
+        
+        ctx.fillStyle = riskColor;
+        ctx.fillRect(padding - 5, y - 1, 5, 2);
+    }
+    
+    // Vertical grid lines
+    if (data.length > 1) {
+        const stepX = chartWidth / (data.length - 1);
+        for (let i = 0; i < data.length; i++) {
+            const x = padding + (i * stepX);
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x, padding);
+            ctx.lineTo(x, padding + chartHeight);
+            ctx.stroke();
+        }
+    }
+    
+    // Draw axes
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, padding + chartHeight);
+    ctx.lineTo(padding + chartWidth, padding + chartHeight);
+    ctx.stroke();
+    
+    // Draw data line and area
+    if (data.length > 1) {
+        const stepX = chartWidth / (data.length - 1);
+        
+        // Draw area under curve
+        ctx.fillStyle = 'rgba(34, 139, 34, 0.1)';
+        ctx.beginPath();
+        ctx.moveTo(padding, padding + chartHeight);
+        
+        data.forEach((point, index) => {
+            const x = padding + (index * stepX);
+            const y = padding + chartHeight - (point.y * chartHeight);
+            ctx.lineTo(x, y);
+        });
+        
+        ctx.lineTo(padding + chartWidth, padding + chartHeight);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw line
+        ctx.strokeStyle = '#228B22';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        
+        data.forEach((point, index) => {
+            const x = padding + (index * stepX);
+            const y = padding + chartHeight - (point.y * chartHeight);
+            
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.stroke();
+    }
+    
+    // Draw data points
+    const stepX = data.length > 1 ? chartWidth / (data.length - 1) : chartWidth / 2;
+    data.forEach((point, index) => {
+        const x = padding + (index * stepX);
+        const y = padding + chartHeight - (point.y * chartHeight);
+        
+        // Point color based on risk level
+        let color;
+        switch(point.riskLevel) {
+            case 'Low': color = '#28a745'; break;
+            case 'Moderate': color = '#ffc107'; break;
+            case 'High': color = '#fd7e14'; break;
+            case 'Very High': color = '#dc3545'; break;
+            default: color = '#6c757d';
+        }
+        
+        // Draw point with white border
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Add risk level emoji
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        let emoji = '🟢';
+        if (point.riskLevel === 'Moderate') emoji = '🟡';
+        else if (point.riskLevel === 'High') emoji = '🔴';
+        else if (point.riskLevel === 'Very High') emoji = '🚨';
+        
+        ctx.fillText(emoji, x, y - 15);
+    });
+    
+    // Draw labels
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    
+    // Y-axis labels (risk scores)
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 10; i++) {
+        const y = padding + (i * chartHeight / 10) + 4;
+        const value = (1.0 - i * 0.1).toFixed(1);
+        ctx.fillText(value, padding - 10, y);
+    }
+    
+    // X-axis labels (dates)
+    ctx.textAlign = 'center';
+    data.forEach((point, index) => {
+        const x = padding + (index * stepX);
+        const y = padding + chartHeight + 20;
+        const date = new Date(point.x + 'T00:00:00').toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        ctx.fillText(date, x, y);
+    });
+    
+    // Chart title
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#228B22';
+    ctx.fillText('Your Stroke Risk Score Over Time', width / 2, 30);
+    
+    // Y-axis title
+    ctx.save();
+    ctx.translate(20, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 12px Arial';
+    ctx.fillStyle = '#1e3a5f';
+    ctx.textAlign = 'center';
+    ctx.fillText('Risk Score (0-1.0)', 0, 0);
+    ctx.restore();
+    
+    // Legend
+    const legendY = height - 30;
+    const legendItems = [
+        { color: '#28a745', text: '🟢 Low', emoji: '🟢' },
+        { color: '#ffc107', text: '🟡 Moderate', emoji: '🟡' },
+        { color: '#fd7e14', text: '🔴 High', emoji: '🔴' },
+        { color: '#dc3545', text: '🚨 Very High', emoji: '🚨' }
+    ];
+    
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'left';
+    let legendX = padding;
+    
+    legendItems.forEach((item, index) => {
+        ctx.fillStyle = item.color;
+        ctx.fillRect(legendX, legendY - 6, 12, 12);
+        
+        ctx.fillStyle = '#333';
+        ctx.fillText(item.text, legendX + 16, legendY + 4);
+        
+        legendX += ctx.measureText(item.text).width + 40;
+    });
+}
+
+function generateTrendAnalysis(assessments) {
+    const trendAnalysisEl = document.getElementById('trendAnalysis');
+    const progressInsightsEl = document.getElementById('progressInsights');
+    
+    if (!trendAnalysisEl || !progressInsightsEl) return;
+    
+    if (assessments.length < 2) {
+        trendAnalysisEl.textContent = 'Take more assessments to see trend analysis.';
+        progressInsightsEl.textContent = 'Complete additional assessments to track your progress.';
+        return;
+    }
+    
+    // Calculate trend (latest vs previous)
+    const latest = assessments[0];
+    const previous = assessments[1];
+    const scoreDiff = latest[5] - previous[5];
+    
+    let trendText, progressText;
+    
+    if (Math.abs(scoreDiff) < 0.05) {
+        trendText = 'Your risk score has remained stable. Continue maintaining your current health practices.';
+        progressText = 'Consistency in your health metrics shows good lifestyle management.';
+    } else if (scoreDiff > 0) {
+        trendText = `Your risk score has increased by ${(scoreDiff * 100).toFixed(1)}%. Consider reviewing your health factors with a healthcare provider.`;
+        progressText = 'Focus on modifiable risk factors like diet, exercise, and stress management.';
+    } else {
+        trendText = `Great news! Your risk score has decreased by ${(Math.abs(scoreDiff) * 100).toFixed(1)}%. Keep up the excellent work!`;
+        progressText = 'Your positive health changes are making a measurable difference.';
+    }
+    
+    trendAnalysisEl.textContent = trendText;
+    progressInsightsEl.textContent = progressText;
+}
+</script>
+{% endblock %}

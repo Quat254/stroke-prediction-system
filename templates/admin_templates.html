@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Templates - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">📝 Assessment Templates</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Manage assessment templates for standardized evaluations</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="showAddTemplateModal()" class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f);">
+                ➕ Add New Template
+            </button>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📊 Template Overview</h2>
+    <div style="display: flex; justify-content: space-around; text-align: center;">
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #228B22;">{{ templates|length }}</div>
+            <div style="color: #666;">Total Templates</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #1e3a5f;">{{ templates|selectattr('3', 'equalto', 1)|list|length }}</div>
+            <div style="color: #666;">Active Templates</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #6c757d;">{{ templates|selectattr('3', 'equalto', 0)|list|length }}</div>
+            <div style="color: #666;">Inactive Templates</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📝 Assessment Templates</h2>
+    {% if templates %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+            {% for template in templates %}
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid {% if template[3] %}#228B22{% else %}#6c757d{% endif %};">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <h4 style="color: #1e3a5f; margin: 0;">{{ template[1] }}</h4>
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
+                                     {% if template[3] %}background: #d4edda; color: #155724;{% else %}background: #f8d7da; color: #721c24;{% endif %}">
+                            {% if template[3] %}✅ Active{% else %}❌ Inactive{% endif %}
+                        </span>
+                    </div>
+                    
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                        {{ template[2] if template[2] else 'No description available' }}
+                    </p>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <small style="color: #999;">
+                            Created by: <strong>{{ template[5] }}</strong><br>
+                            Created: {{ template[4][:10] if template[4] else 'N/A' }}
+                        </small>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onclick="editTemplate({{ template[0] }}, '{{ template[1] }}', '{{ template[2] if template[2] else '' }}')" 
+                                class="btn" style="padding: 6px 12px; font-size: 12px; background: #d4af37;">
+                            ✏️ Edit
+                        </button>
+                        <button onclick="toggleTemplate({{ template[0] }})" 
+                                class="btn" style="padding: 6px 12px; font-size: 12px; 
+                                {% if template[3] %}background: #dc3545;{% else %}background: #228B22;{% endif %}">
+                            {% if template[3] %}🚫 Deactivate{% else %}✅ Activate{% endif %}
+                        </button>
+                        <button onclick="viewTemplate({{ template[0] }})" 
+                                class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                            👁️ View
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h3>📝 No Templates Found</h3>
+            <p>Create your first assessment template to get started.</p>
+            <button onclick="showAddTemplateModal()" class="btn" style="margin-top: 20px;">
+                ➕ Create First Template
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add Template Modal -->
+<div id="addTemplateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <h3 style="color: #228B22; margin-bottom: 20px;">➕ Add New Template</h3>
+        <form id="addTemplateForm">
+            <div class="form-group">
+                <label>Template Name:</label>
+                <input type="text" id="templateName" required placeholder="e.g., Standard Risk Assessment">
+            </div>
+            <div class="form-group">
+                <label>Description:</label>
+                <textarea id="templateDescription" rows="3" placeholder="Brief description of this template's purpose"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Template Data (JSON Format):</label>
+                <textarea id="templateData" rows="10" required placeholder='{"questions": [{"id": 1, "text": "Age", "type": "number"}, {"id": 2, "text": "Gender", "type": "select", "options": ["Male", "Female"]}]}'></textarea>
+                <small style="color: #666;">Enter the template structure in JSON format</small>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideAddTemplateModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn">Add Template</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Template Modal -->
+<div id="editTemplateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <h3 style="color: #d4af37; margin-bottom: 20px;">✏️ Edit Template</h3>
+        <form id="editTemplateForm">
+            <input type="hidden" id="editTemplateId">
+            <div class="form-group">
+                <label>Template Name:</label>
+                <input type="text" id="editTemplateName" required>
+            </div>
+            <div class="form-group">
+                <label>Description:</label>
+                <textarea id="editTemplateDescription" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Template Data (JSON Format):</label>
+                <textarea id="editTemplateData" rows="10" required></textarea>
+                <small style="color: #666;">Enter the template structure in JSON format</small>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideEditTemplateModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn" style="background: #d4af37;">Update Template</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddTemplateModal() {
+    document.getElementById('addTemplateModal').style.display = 'block';
+}
+
+function hideAddTemplateModal() {
+    document.getElementById('addTemplateModal').style.display = 'none';
+    document.getElementById('addTemplateForm').reset();
+}
+
+function showEditTemplateModal() {
+    document.getElementById('editTemplateModal').style.display = 'block';
+}
+
+function hideEditTemplateModal() {
+    document.getElementById('editTemplateModal').style.display = 'none';
+    document.getElementById('editTemplateForm').reset();
+}
+
+document.getElementById('addTemplateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validate JSON
+    try {
+        JSON.parse(document.getElementById('templateData').value);
+    } catch (e) {
+        alert('Invalid JSON format in template data. Please check your syntax.');
+        return;
+    }
+    
+    const templateData = {
+        name: document.getElementById('templateName').value,
+        description: document.getElementById('templateDescription').value,
+        template_data: document.getElementById('templateData').value
+    };
+    
+    fetch('/admin/add_template', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(templateData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Template added successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the template.');
+    });
+});
+
+document.getElementById('editTemplateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validate JSON
+    try {
+        JSON.parse(document.getElementById('editTemplateData').value);
+    } catch (e) {
+        alert('Invalid JSON format in template data. Please check your syntax.');
+        return;
+    }
+    
+    const templateId = document.getElementById('editTemplateId').value;
+    const templateData = {
+        name: document.getElementById('editTemplateName').value,
+        description: document.getElementById('editTemplateDescription').value,
+        template_data: document.getElementById('editTemplateData').value
+    };
+    
+    fetch(`/admin/edit_template/${templateId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(templateData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Template updated successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the template.');
+    });
+});
+
+function editTemplate(id, name, description) {
+    document.getElementById('editTemplateId').value = id;
+    document.getElementById('editTemplateName').value = name;
+    document.getElementById('editTemplateDescription').value = description;
+    // Note: In a real implementation, you'd fetch the template data
+    document.getElementById('editTemplateData').value = '{"questions": []}';
+    showEditTemplateModal();
+}
+
+function toggleTemplate(templateId) {
+    if (confirm('Are you sure you want to change this template\'s status?')) {
+        fetch(`/admin/toggle_template/${templateId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating template status.');
+        });
+    }
+}
+
+function viewTemplate(templateId) {
+    // In a real implementation, this would show the template details
+    alert('Template view functionality would be implemented here.');
+}
+</script>
+
+<style>
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #1e3a5f;
+    box-shadow: 0 0 5px rgba(30, 58, 95, 0.3);
+}
+</style>
+{% endblock %}

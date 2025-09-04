@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">👥 User Management</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Manage system users and their data</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="showAddUserModal()" class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f);">
+                ➕ Add New User
+            </button>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📊 User Statistics</h2>
+    <div style="display: flex; justify-content: space-around; text-align: center;">
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #228B22;">{{ users|length }}</div>
+            <div style="color: #666;">Total Users</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #1e3a5f;">{{ users|selectattr('6', 'equalto', 1)|list|length }}</div>
+            <div style="color: #666;">Active Users</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #d4af37;">{{ admin_users|length }}</div>
+            <div style="color: #666;">Admin Users</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #dc3545;">{{ users|selectattr('6', 'equalto', 0)|list|length }}</div>
+            <div style="color: #666;">Inactive Users</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>👥 Regular Users</h2>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Username</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Full Name</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Email</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Status</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Role</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Assessments</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Joined</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 12px; font-weight: bold; color: #1e3a5f;">{{ user[1] }}</td>
+                        <td style="padding: 12px;">{{ user[2] }}</td>
+                        <td style="padding: 12px;">{{ user[3] }}</td>
+                        <td style="padding: 12px;">
+                            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
+                                         {% if user[6] %}background: #d4edda; color: #155724;{% else %}background: #f8d7da; color: #721c24;{% endif %}">
+                                {% if user[6] %}✅ Active{% else %}❌ Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td style="padding: 12px;">
+                            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #e2e3e5; color: #383d41;">
+                                {{ user[7] if user[7] else 'user' }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            <span style="font-weight: bold; color: #1e3a5f;">{{ user[8] }}</span>
+                        </td>
+                        <td style="padding: 12px;">{{ user[4][:10] if user[4] else 'N/A' }}</td>
+                        <td style="padding: 12px;">
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <button onclick="toggleUserStatus({{ user[0] }})" 
+                                        class="btn" style="padding: 4px 8px; font-size: 12px; 
+                                        {% if user[6] %}background: #dc3545;{% else %}background: #228B22;{% endif %}">
+                                    {% if user[6] %}🚫 Deactivate{% else %}✅ Activate{% endif %}
+                                </button>
+                                {% if user[7] != 'admin' %}
+                                <button onclick="makeAdmin({{ user[0] }})" 
+                                        class="btn" style="padding: 4px 8px; font-size: 12px; background: #d4af37;">
+                                    👑 Make Admin
+                                </button>
+                                {% endif %}
+                                <button onclick="deleteUser({{ user[0] }}, '{{ user[1] }}')" 
+                                        class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>👑 Admin Users</h2>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Username</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Full Name</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Email</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Role</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Created</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; color: #228B22;">Last Login</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for admin in admin_users %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 12px; font-weight: bold; color: #d4af37;">{{ admin[1] }}</td>
+                        <td style="padding: 12px;">{{ admin[2] }}</td>
+                        <td style="padding: 12px;">{{ admin[3] }}</td>
+                        <td style="padding: 12px;">
+                            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #fff3cd; color: #856404;">
+                                👑 {{ admin[4] }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px;">{{ admin[5][:10] if admin[5] else 'N/A' }}</td>
+                        <td style="padding: 12px;">{{ admin[6][:10] if admin[6] else 'Never' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px;">
+        <h3 style="color: #228B22; margin-bottom: 20px;">➕ Add New User</h3>
+        <form id="addUserForm">
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" id="newUsername" required>
+            </div>
+            <div class="form-group">
+                <label>Full Name:</label>
+                <input type="text" id="newFullName" required>
+            </div>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="newEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Phone:</label>
+                <input type="text" id="newPhone">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="newPassword" required>
+            </div>
+            <div class="form-group">
+                <label>Role:</label>
+                <select id="newRole">
+                    <option value="user">Regular User</option>
+                    <option value="admin">Administrator</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideAddUserModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn">Add User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddUserModal() {
+    document.getElementById('addUserModal').style.display = 'block';
+}
+
+function hideAddUserModal() {
+    document.getElementById('addUserModal').style.display = 'none';
+    document.getElementById('addUserForm').reset();
+}
+
+document.getElementById('addUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const userData = {
+        username: document.getElementById('newUsername').value,
+        full_name: document.getElementById('newFullName').value,
+        email: document.getElementById('newEmail').value,
+        phone: document.getElementById('newPhone').value,
+        password: document.getElementById('newPassword').value,
+        role: document.getElementById('newRole').value
+    };
+    
+    fetch('/admin/add_user', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('User added successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the user.');
+    });
+});
+
+function toggleUserStatus(userId) {
+    if (confirm('Are you sure you want to change this user\'s status?')) {
+        fetch(`/admin/toggle_user_status/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating user status.');
+        });
+    }
+}
+
+function makeAdmin(userId) {
+    if (confirm('Are you sure you want to make this user an administrator?')) {
+        fetch(`/admin/make_admin/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while promoting user to admin.');
+        });
+    }
+}
+
+function deleteUser(userId, username) {
+    if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone and will delete all their data.`)) {
+        fetch(`/admin/delete_user/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the user.');
+        });
+    }
+}
+</script>
+{% endblock %}

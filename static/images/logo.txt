@@ -1,0 +1,1 @@
+Please download the Omeka logo from https://drive.google.com/file/d/1CbovYZ6Ug795VGp8SG0k6S8mL-96m8Th/view?usp=sharing and save it as "omeka_logo.png" in this directory.

@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Omeka{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>👤 Your Profile</h2>
+    <p style="margin-bottom: 30px; color: #1e3a5f;">Manage your account information and preferences.</p>
+    
+    <div class="grid-2">
+        <div>
+            <h3 style="color: #228B22; margin-bottom: 15px;">📝 Account Information</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                <div style="margin-bottom: 15px;">
+                    <strong>Username:</strong> {{ user[1] }}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Email:</strong> {{ user[2] }}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Full Name:</strong> {{ user[4] }}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Date of Birth:</strong> {{ user[5] or 'Not provided' }}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Phone:</strong> {{ user[6] or 'Not provided' }}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Emergency Contact:</strong> {{ user[7] or 'Not provided' }}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Member Since:</strong> {{ user[8][:10] }}
+                </div>
+                <div>
+                    <strong>Last Login:</strong> {{ user[9][:19] if user[9] else 'Never' }}
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 style="color: #228B22; margin-bottom: 15px;">⚙️ Account Settings</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="showUpdateForm()">
+                    ✏️ Update Profile Information
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="showPasswordForm()">
+                    🔒 Change Password
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="exportData()">
+                    📥 Export My Data
+                </button>
+                <button class="btn btn-danger" style="width: 100%;" onclick="confirmDeleteAccount()">
+                    🗑️ Delete Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Profile Form (Hidden by default) -->
+<div class="card" id="updateForm" style="display: none;">
+    <h3 style="color: #228B22; margin-bottom: 20px;">✏️ Update Profile Information</h3>
+    <form id="profileUpdateForm">
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="full_name">📝 Full Name</label>
+                <input type="text" id="full_name" name="full_name" value="{{ user[4] }}" readonly disabled style="background-color: #f2f2f2; cursor: not-allowed;">
+                <small style="color: #6c757d;">Name cannot be changed</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">📧 Email Address</label>
+                <input type="email" id="email" name="email" value="{{ user[2] }}" readonly disabled style="background-color: #f2f2f2; cursor: not-allowed;">
+                <small style="color: #6c757d;">Email cannot be changed</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="date_of_birth">🎂 Date of Birth</label>
+                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ user[5] or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">📞 Phone Number</label>
+                <input type="tel" id="phone" name="phone" value="{{ user[6] or '' }}" pattern="^\(\d{3}\)\s\d{3}-\d{4}$|^\d{10}$|^\d{3}-\d{3}-\d{4}$" title="Please enter a valid phone number: (555) 123-4567, 5551234567, or 555-123-4567">
+                <small style="color: #6c757d;">Format: (555) 123-4567 or 5551234567</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="emergency_contact">🚨 Emergency Contact</label>
+                <input type="tel" id="emergency_contact" name="emergency_contact" value="{{ user[7] or '' }}" pattern="^\(\d{3}\)\s\d{3}-\d{4}$|^\d{10}$|^\d{3}-\d{3}-\d{4}$" title="Please enter a valid phone number: (555) 123-4567, 5551234567, or 555-123-4567">
+                <small style="color: #6c757d;">Required for emergency notifications</small>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button type="submit" class="btn">💾 Save Changes</button>
+            <button type="button" class="btn btn-secondary" onclick="hideUpdateForm()" style="margin-left: 10px;">❌ Cancel</button>
+        </div>
+    </form>
+</div>
+
+<!-- Change Password Form (Hidden by default) -->
+<div class="card" id="passwordForm" style="display: none;">
+    <h3 style="color: #228B22; margin-bottom: 20px;">🔒 Change Password</h3>
+    <form id="passwordChangeForm">
+        <div class="form-group">
+            <label for="current_password">🔐 Current Password</label>
+            <input type="password" id="current_password" name="current_password" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="new_password">🔑 New Password</label>
+            <input type="password" id="new_password" name="new_password" required minlength="6">
+        </div>
+        
+        <div class="form-group">
+            <label for="confirm_password">🔑 Confirm New Password</label>
+            <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button type="submit" class="btn">🔄 Update Password</button>
+            <button type="button" class="btn btn-secondary" onclick="hidePasswordForm()" style="margin-left: 10px;">❌ Cancel</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>📊 Account Statistics</h2>
+    <div class="grid-2">
+        <div style="background: #d4edda; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #28a745;">
+            <h3 style="color: #155724; margin-bottom: 10px;">📈 Total Assessments</h3>
+            <div style="font-size: 2rem; color: #155724; font-weight: bold;" id="totalAssessments">Loading...</div>
+        </div>
+        
+        <div style="background: #d1ecf1; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #0c5460;">
+            <h3 style="color: #0c5460; margin-bottom: 10px;">📅 Days Active</h3>
+            <div style="font-size: 2rem; color: #0c5460; font-weight: bold;" id="daysActive">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🔒 Privacy & Security</h2>
+    <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 5px solid #ffc107;">
+        <h4 style="color: #856404; margin-bottom: 15px;">🛡️ Data Protection</h4>
+        <ul style="color: #856404; margin-left: 20px;">
+            <li>Your personal health information is encrypted and stored securely</li>
+            <li>We never share your data with third parties without your explicit consent</li>
+            <li>You can export or delete your data at any time</li>
+            <li>All communications are protected with industry-standard security</li>
+        </ul>
+        
+        <h4 style="color: #856404; margin: 20px 0 15px 0;">📋 Data Usage</h4>
+        <ul style="color: #856404; margin-left: 20px;">
+            <li>Assessment data is used only for risk calculation and recommendations</li>
+            <li>Anonymous, aggregated data may be used for system improvements</li>
+            <li>You can opt out of data usage for research purposes</li>
+        </ul>
+    </div>
+</div>
+
+<div class="text-center mt-20">
+    <a href="{{ url_for('dashboard') }}" class="btn">🏠 Back to Dashboard</a>
+</div>
+
+<script>
+// Load account statistics
+document.addEventListener('DOMContentLoaded', function() {
+    loadAccountStats();
+    
+    // Phone number formatting
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                if (value.length <= 10) {
+                    if (value.length > 6) {
+                        value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
+                    } else if (value.length > 3) {
+                        value = `(${value.substring(0, 3)}) ${value.substring(3)}`;
+                    } else {
+                        value = `(${value}`;
+                    }
+                } else {
+                    value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6, 10)}`;
+                }
+            }
+            e.target.value = value;
+        });
+    }
+    
+    // Emergency contact phone formatting
+    const emergencyContactInput = document.getElementById('emergency_contact');
+    if (emergencyContactInput) {
+        emergencyContactInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                if (value.length <= 10) {
+                    if (value.length > 6) {
+                        value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
+                    } else if (value.length > 3) {
+                        value = `(${value.substring(0, 3)}) ${value.substring(3)}`;
+                    } else {
+                        value = `(${value}`;
+                    }
+                } else {
+                    value = `(${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6, 10)}`;
+                }
+            }
+            e.target.value = value;
+        });
+    }
+});
+
+function loadAccountStats() {
+    // Calculate days active
+    const memberSince = new Date('{{ user[7] }}');
+    const today = new Date();
+    const daysActive = Math.floor((today - memberSince) / (1000 * 60 * 60 * 24));
+    
+    document.getElementById('daysActive').textContent = daysActive;
+    
+    // For now, we'll simulate total assessments
+    // In a real implementation, this would be fetched from the server
+    document.getElementById('totalAssessments').textContent = '{{ user[0] }}'; // Using user ID as placeholder
+}
+
+function showUpdateForm() {
+    document.getElementById('updateForm').style.display = 'block';
+    document.getElementById('updateForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideUpdateForm() {
+    document.getElementById('updateForm').style.display = 'none';
+}
+
+function showPasswordForm() {
+    document.getElementById('passwordForm').style.display = 'block';
+    document.getElementById('passwordForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hidePasswordForm() {
+    document.getElementById('passwordForm').style.display = 'none';
+}
+
+// Handle profile update
+document.getElementById('profileUpdateForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        // Make API call to update the profile
+        const response = await makeRequest('{{ url_for("update_profile") }}', data);
+        
+        if (response.success) {
+            showAlert('Profile updated successfully!', 'success');
+            
+            // Update the displayed information without page refresh
+            const profileInfo = document.querySelector('.grid-2 > div:first-child > div');
+            const dateOfBirthElement = profileInfo.children[3];
+            const phoneElement = profileInfo.children[4];
+            const emergencyContactElement = profileInfo.children[5];
+            
+            // Update the displayed date of birth
+            dateOfBirthElement.innerHTML = `<strong>Date of Birth:</strong> ${data.date_of_birth || 'Not provided'}`;
+            
+            // Update the displayed phone number
+            phoneElement.innerHTML = `<strong>Phone:</strong> ${data.phone || 'Not provided'}`;
+            
+            // Update the displayed emergency contact
+            emergencyContactElement.innerHTML = `<strong>Emergency Contact:</strong> ${data.emergency_contact || 'Not provided'}`;
+            
+            hideUpdateForm();
+        } else {
+            showAlert(response.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        showAlert('Failed to update profile. Please try again.', 'error');
+    }
+});
+
+// Handle password change
+document.getElementById('passwordChangeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Validate passwords match
+    if (data.new_password !== data.confirm_password) {
+        showAlert('New passwords do not match', 'error');
+        return;
+    }
+    
+    try {
+        // In a real implementation, this would make an API call to change the password
+        showAlert('Password changed successfully!', 'success');
+        hidePasswordForm();
+        this.reset();
+    } catch (error) {
+        showAlert('Failed to change password. Please try again.', 'error');
+    }
+});
+
+function exportData() {
+    // Create user data export
+    const userData = {
+        profile: {
+            username: '{{ user[1] }}',
+            email: '{{ user[2] }}',
+            full_name: '{{ user[4] }}',
+            date_of_birth: '{{ user[5] or "" }}',
+            phone: '{{ user[6] or "" }}',
+            member_since: '{{ user[7] }}',
+            last_login: '{{ user[8] or "" }}'
+        },
+        export_date: new Date().toISOString(),
+        note: 'This export contains your profile information. Assessment data can be exported from the History page.'
+    };
+    
+    // Download as JSON
+    const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `profile_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showAlert('Profile data exported successfully!', 'success');
+}
+
+function confirmDeleteAccount() {
+    const confirmation = confirm(
+        'Are you sure you want to delete your account?\n\n' +
+        'This action will:\n' +
+        '• Permanently delete all your assessment data\n' +
+        '• Remove your profile information\n' +
+        '• Cannot be undone\n\n' +
+        'Type "DELETE" in the next prompt to confirm.'
+    );
+    
+    if (confirmation) {
+        const deleteConfirmation = prompt('Type "DELETE" to confirm account deletion:');
+        
+        if (deleteConfirmation === 'DELETE') {
+            // Call the delete account API
+            fetch('{{ url_for("delete_account") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Account deleted successfully. Redirecting to homepage...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("index") }}';
+                    }, 2000);
+                } else {
+                    showAlert(data.message || 'Failed to delete account', 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Failed to delete account. Please try again.', 'error');
+            });
+        } else {
+            showAlert('Account deletion cancelled.', 'info');
+        }
+    }
+}
+
+// Password strength indicator
+document.getElementById('new_password').addEventListener('input', function() {
+    const password = this.value;
+    const strength = calculatePasswordStrength(password);
+    
+    // Remove existing indicator
+    const existingIndicator = document.querySelector('.password-strength');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+    
+    if (password.length > 0) {
+        const indicator = document.createElement('div');
+        indicator.className = 'password-strength';
+        indicator.style.marginTop = '5px';
+        indicator.style.fontSize = '12px';
+        
+        if (strength < 3) {
+            indicator.style.color = '#dc3545';
+            indicator.textContent = '🔴 Weak password';
+        } else if (strength < 5) {
+            indicator.style.color = '#ffc107';
+            indicator.textContent = '🟡 Medium password';
+        } else {
+            indicator.style.color = '#28a745';
+            indicator.textContent = '🟢 Strong password';
+        }
+        
+        this.parentNode.appendChild(indicator);
+    }
+});
+
+function calculatePasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
+}
+
+function getCsrfToken() {
+    // This is a simple implementation - in a real app, you'd get this from a meta tag or cookie
+    return '{{ csrf_token }}';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Report Management - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">📄 Report Management</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Manage and archive generated assessment reports</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📊 Report Statistics</h2>
+    {% if reports %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+                <div style="font-size: 2rem; font-weight: bold; color: #007bff;">{{ reports|length }}</div>
+                <div style="color: #007bff; font-weight: bold;">Total Reports</div>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+                <div style="font-size: 2rem; font-weight: bold; color: #28a745;">{{ reports|length }}</div>
+                <div style="color: #28a745; font-weight: bold;">PDF Reports</div>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <div style="font-size: 2rem; font-weight: bold; color: #ffc107;">0</div>
+                <div style="color: #ffc107; font-weight: bold;">Pending Reports</div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📋 Generated Reports</h2>
+    {% if reports %}
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="searchInput" placeholder="🔍 Search by patient name or username..." 
+                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;"
+                   onkeyup="filterReports()">
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table id="reportsTable" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Report ID</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Patient</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Risk Level</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Generated Date</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Type</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                        <tr style="border-bottom: 1px solid #dee2e6;" class="report-row">
+                            <td style="padding: 12px;">RPT-{{ "%04d"|format(report[0]) }}</td>
+                            <td style="padding: 12px;" class="patient-info">
+                                <div style="font-weight: bold;" class="patient-name">{{ report[2] }}</div>
+                                <div style="color: #666; font-size: 14px;">@{{ report[1] }}</div>
+                            </td>
+                            <td style="padding: 12px;">
+                                <span style="color: {% if report[3] in ['Very Low', 'Low'] %}#28a745{% elif report[3] == 'Moderate' %}#ffc107{% elif report[3] == 'High' %}#fd7e14{% else %}#dc3545{% endif %}; font-weight: bold;">
+                                    {% if report[3] == 'Very Low' %}🟢 Very Low
+                                    {% elif report[3] == 'Low' %}🟢 Low
+                                    {% elif report[3] == 'Moderate' %}🟡 Moderate
+                                    {% elif report[3] == 'High' %}🟠 High
+                                    {% elif report[3] == 'Very High' %}🔴 Very High
+                                    {% elif report[3] == 'Critical' %}🚨 Critical
+                                    {% else %}{{ report[3] }}{% endif %}
+                                </span>
+                            </td>
+                            <td style="padding: 12px;">{{ report[5][:10] if report[5] else 'N/A' }}</td>
+                            <td style="padding: 12px;">
+                                <span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">
+                                    📄 {{ report[6] }}
+                                </span>
+                            </td>
+                            <td style="padding: 12px;">
+                                <div style="display: flex; gap: 5px;">
+                                    <button onclick="downloadReport({{ report[0] }})" 
+                                            class="btn" 
+                                            style="background: #28a745; color: white; padding: 6px 12px; font-size: 12px;">
+                                        📥 Download
+                                    </button>
+                                    <button onclick="emailReport({{ report[0] }}, '{{ report[2] }}')" 
+                                            class="btn btn-secondary" 
+                                            style="padding: 6px 12px; font-size: 12px;">
+                                        📧 Email
+                                    </button>
+                                    <button onclick="archiveReport({{ report[0] }})" 
+                                            class="btn btn-secondary" 
+                                            style="padding: 6px 12px; font-size: 12px;">
+                                        📦 Archive
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center; color: #666;">
+            <p>Total Reports: <span id="totalCount">{{ reports|length }}</span></p>
+        </div>
+    {% else %}
+        <p style="color: #666; text-align: center; padding: 40px;">No reports generated yet</p>
+    {% endif %}
+</div>
+
+<script>
+function filterReports() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('reportsTable');
+    const rows = table.getElementsByClassName('report-row');
+    let visibleCount = 0;
+    
+    for (let i = 0; i < rows.length; i++) {
+        const patientName = rows[i].getElementsByClassName('patient-name')[0].textContent.toLowerCase();
+        const patientInfo = rows[i].getElementsByClassName('patient-info')[0].textContent.toLowerCase();
+        
+        if (patientName.includes(filter) || patientInfo.includes(filter)) {
+            rows[i].style.display = '';
+            visibleCount++;
+        } else {
+            rows[i].style.display = 'none';
+        }
+    }
+    
+    document.getElementById('totalCount').textContent = visibleCount;
+}
+
+function downloadReport(reportId) {
+    alert(`Download report RPT-${String(reportId).padStart(4, '0')}\n\nThis would:\n- Generate PDF report\n- Include assessment details\n- Add admin download log\n- Provide secure download link`);
+}
+
+function emailReport(reportId, patientName) {
+    if (confirm(`Email report to healthcare provider for ${patientName}?`)) {
+        alert(`Email report RPT-${String(reportId).padStart(4, '0')}\n\nThis would:\n- Send to registered healthcare provider\n- Include secure PDF attachment\n- Log email activity\n- Maintain HIPAA compliance`);
+    }
+}
+
+function archiveReport(reportId) {
+    if (confirm(`Archive report RPT-${String(reportId).padStart(4, '0')}?`)) {
+        alert(`Archive report\n\nThis would:\n- Move to archived storage\n- Maintain data retention compliance\n- Update report status\n- Log archival activity`);
+    }
+}
+</script>
+{% endblock %}

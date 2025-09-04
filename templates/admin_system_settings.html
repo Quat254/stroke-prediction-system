@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">⚙️ System Configuration</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Manage system settings and thresholds</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h2>🏥 Health Thresholds</h2>
+        <form style="display: flex; flex-direction: column; gap: 15px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Normal BMI Range:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="number" value="18.5" step="0.1" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <span>to</span>
+                    <input type="number" value="24.9" step="0.1" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Normal Glucose Level (mg/dL):</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span>Below</span>
+                    <input type="number" value="100" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">High Risk Age Threshold:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span>Above</span>
+                    <input type="number" value="60" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <span>years</span>
+                </div>
+            </div>
+            
+            <button type="button" class="btn" onclick="saveHealthThresholds()">
+                💾 Save Health Thresholds
+            </button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h2>🔧 System Configuration</h2>
+        <form style="display: flex; flex-direction: column; gap: 15px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+                    <input type="checkbox" checked> Enable Email Notifications
+                </label>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+                    <input type="checkbox" checked> Auto-generate PDF Reports
+                </label>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+                    <input type="checkbox"> Maintenance Mode
+                </label>
+                <small style="color: #666;">Prevents new user registrations</small>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Session Timeout (hours):</label>
+                <input type="number" value="2" min="1" max="24" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <button type="button" class="btn" onclick="saveSystemSettings()">
+                💾 Save System Settings
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📢 System Announcements</h2>
+    <div style="margin-bottom: 20px;">
+        <textarea placeholder="Enter system announcement for users..." 
+                  style="width: 100%; height: 100px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; resize: vertical;"></textarea>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn" onclick="publishAnnouncement()">
+            📢 Publish Announcement
+        </button>
+        <button class="btn btn-secondary" onclick="clearAnnouncement()">
+            🗑️ Clear Announcement
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🔄 System Maintenance</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+            <h4 style="color: #495057; margin-bottom: 15px;">Database Backup</h4>
+            <button class="btn" onclick="backupDatabase()">
+                💾 Create Backup
+            </button>
+            <p style="color: #666; font-size: 12px; margin-top: 10px;">Last backup: Today 02:00 AM</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+            <h4 style="color: #495057; margin-bottom: 15px;">Clear Cache</h4>
+            <button class="btn btn-secondary" onclick="clearCache()">
+                🗑️ Clear System Cache
+            </button>
+            <p style="color: #666; font-size: 12px; margin-top: 10px;">Improves system performance</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+            <h4 style="color: #495057; margin-bottom: 15px;">System Health</h4>
+            <button class="btn" style="background: #28a745; color: white;" onclick="checkSystemHealth()">
+                ✅ Run Health Check
+            </button>
+            <p style="color: #666; font-size: 12px; margin-top: 10px;">Status: All systems operational</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveHealthThresholds() {
+    alert('Health thresholds would be saved to the database.\n\nThis would update:\n- BMI calculation ranges\n- Glucose level classifications\n- Age-based risk factors\n- Risk scoring algorithms');
+}
+
+function saveSystemSettings() {
+    alert('System settings would be saved.\n\nThis would update:\n- Email notification preferences\n- PDF report generation\n- Session timeout values\n- Maintenance mode status');
+}
+
+function publishAnnouncement() {
+    alert('System announcement would be published.\n\nThis would:\n- Display message to all users on login\n- Send notification emails (if enabled)\n- Log the announcement in system logs');
+}
+
+function clearAnnouncement() {
+    if (confirm('Clear the current system announcement?')) {
+        document.querySelector('textarea').value = '';
+        alert('Announcement cleared successfully!');
+    }
+}
+
+function backupDatabase() {
+    if (confirm('Create a database backup? This may take a few minutes.')) {
+        alert('Database backup would be created.\n\nThis would:\n- Export all user data\n- Export all assessment records\n- Create timestamped backup file\n- Store in secure backup location');
+    }
+}
+
+function clearCache() {
+    if (confirm('Clear system cache? This will temporarily slow down the system.')) {
+        alert('System cache would be cleared.\n\nThis would:\n- Clear temporary files\n- Reset cached calculations\n- Improve system performance\n- Free up storage space');
+    }
+}
+
+function checkSystemHealth() {
+    alert('System health check would be performed.\n\nThis would check:\n- Database connectivity\n- File system permissions\n- Memory usage\n- Disk space availability\n- Service status');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1098 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Omeka{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: #d4af37; margin-bottom: 10px;">👋 Welcome back, {{ full_name }}!</h1>
+    <p style="color: #1e3a5f; font-size: 1.1rem;">Your personal health monitoring dashboard</p>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h2>🎯 Quick Actions</h2>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <a href="{{ url_for('assessment') }}" class="btn">
+                🔍 New Stroke Risk Assessment
+            </a>
+            <a href="{{ url_for('history') }}" class="btn btn-secondary">
+                📊 View Assessment History
+            </a>
+            <a href="{{ url_for('profile') }}" class="btn btn-secondary">
+                👤 Update Profile
+            </a>
+            <div style="border-top: 1px solid #e0e0e0; margin: 10px 0; padding-top: 15px;">
+                <a href="{{ url_for('admin_login') }}" class="btn" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; border: none;">
+                    🔐 Admin Login
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📈 Health Overview</h2>
+        <div id="healthStats">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                <span><strong>Total Assessments:</strong></span>
+                <span style="color: #228B22; font-weight: bold;">{{ recent_assessments|length }}</span>
+            </div>
+            
+            {% if recent_assessments %}
+                {% set latest = recent_assessments[0] %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+                    <span><strong>Latest Risk Level:</strong></span>
+                    <span style="color: {% if latest[1] in ['Very Low', 'Low'] %}#28a745{% elif latest[1] == 'Moderate' %}#ffc107{% elif latest[1] == 'High' %}#fd7e14{% else %}#dc3545{% endif %}; font-weight: bold;">
+                        {% if latest[1] == 'Very Low' %}🟢 Very Low
+                        {% elif latest[1] == 'Low' %}🟢 Low
+                        {% elif latest[1] == 'Moderate' %}🟡 Moderate
+                        {% elif latest[1] == 'High' %}🟠 High
+                        {% elif latest[1] == 'Very High' %}🔴 Very High
+                        {% elif latest[1] == 'Critical' %}🚨 Critical
+                        {% else %}{{ latest[1] }}{% endif %}
+                    </span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <span><strong>Last Assessment:</strong></span>
+                    <span style="color: #1e3a5f; font-weight: bold;">{{ latest[3][:10] }}</span>
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 20px; color: #6c757d;">
+                    <p>No assessments yet</p>
+                    <p style="font-size: 14px;">Take your first assessment to get started!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if recent_assessments %}
+<div class="card">
+    <h2>📊 Risk Score Trends & Distribution</h2>
+    <div id="riskScoreChart" style="height: 450px; margin-bottom: 30px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <canvas id="riskChart" width="800" height="350"></canvas>
+    </div>
+    
+    <!-- Enhanced Risk Level Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="risk-card" style="background: linear-gradient(135deg, #d4edda, #c3e6cb); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2); cursor: pointer;" onclick="filterAssessmentsByRisk('low')">
+            <div style="color: #155724; font-size: 32px; font-weight: bold; margin-bottom: 5px;" id="lowRiskCount">0</div>
+            <div style="color: #155724; font-size: 14px; font-weight: 600;">Very Low - Low Risk</div>
+            <div style="color: #155724; font-size: 12px; margin-top: 5px;">Minimal intervention needed</div>
+            <div style="color: #155724; font-size: 10px; margin-top: 8px; opacity: 0.8;">Click to view assessments</div>
+        </div>
+        <div class="risk-card" style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 8px rgba(255, 193, 7, 0.2); cursor: pointer;" onclick="filterAssessmentsByRisk('moderate')">
+            <div style="color: #856404; font-size: 32px; font-weight: bold; margin-bottom: 5px;" id="moderateRiskCount">0</div>
+            <div style="color: #856404; font-size: 14px; font-weight: 600;">Moderate Risk</div>
+            <div style="color: #856404; font-size: 12px; margin-top: 5px;">Lifestyle changes recommended</div>
+            <div style="color: #856404; font-size: 10px; margin-top: 8px; opacity: 0.8;">Click to view assessments</div>
+        </div>
+        <div class="risk-card" style="background: linear-gradient(135deg, #fed7aa, #fdcb6e); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 8px rgba(253, 126, 20, 0.2); cursor: pointer;" onclick="filterAssessmentsByRisk('high')">
+            <div style="color: #8a4a00; font-size: 32px; font-weight: bold; margin-bottom: 5px;" id="highRiskCount">0</div>
+            <div style="color: #8a4a00; font-size: 14px; font-weight: 600;">High Risk</div>
+            <div style="color: #8a4a00; font-size: 12px; margin-top: 5px;">Medical consultation needed</div>
+            <div style="color: #8a4a00; font-size: 10px; margin-top: 8px; opacity: 0.8;">Click to view assessments</div>
+        </div>
+        <div class="risk-card" style="background: linear-gradient(135deg, #f8d7da, #f5c6cb); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2); cursor: pointer;" onclick="filterAssessmentsByRisk('critical')">
+            <div style="color: #721c24; font-size: 32px; font-weight: bold; margin-bottom: 5px;" id="criticalRiskCount">0</div>
+            <div style="color: #721c24; font-size: 14px; font-weight: 600;">Very High - Critical</div>
+            <div style="color: #721c24; font-size: 12px; margin-top: 5px;">Urgent medical attention</div>
+            <div style="color: #721c24; font-size: 10px; margin-top: 8px; opacity: 0.8;">Click to view assessments</div>
+        </div>
+    </div>
+    
+    <!-- Risk Score Statistics -->
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h4 style="color: #1e3a5f; margin-bottom: 15px;">📈 Risk Score Analytics</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+            <div class="stats-card" style="text-align: center; padding: 15px; background: white; border-radius: 8px; transition: all 0.3s ease;">
+                <div style="font-size: 24px; font-weight: bold; color: #007bff;" id="avgRiskScore">0.000</div>
+                <div style="font-size: 12px; color: #6c757d;">Average Score</div>
+            </div>
+            <div class="stats-card" style="text-align: center; padding: 15px; background: white; border-radius: 8px; transition: all 0.3s ease;">
+                <div style="font-size: 24px; font-weight: bold; color: #28a745;" id="minRiskScore">0.000</div>
+                <div style="font-size: 12px; color: #6c757d;">Lowest Score</div>
+            </div>
+            <div class="stats-card" style="text-align: center; padding: 15px; background: white; border-radius: 8px; transition: all 0.3s ease;">
+                <div style="font-size: 24px; font-weight: bold; color: #dc3545;" id="maxRiskScore">0.000</div>
+                <div style="font-size: 12px; color: #6c757d;">Highest Score</div>
+            </div>
+            <div class="stats-card" style="text-align: center; padding: 15px; background: white; border-radius: 8px; transition: all 0.3s ease;">
+                <div style="font-size: 24px; font-weight: bold; color: #6f42c1;" id="trendDirection">→</div>
+                <div style="font-size: 12px; color: #6c757d;">Trend Direction</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📋 Recent Assessments</h2>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Date</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Risk Level</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Risk Score</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assessment in recent_assessments %}
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 12px;">{{ assessment[3][:10] }}</td>
+                    <td style="padding: 12px;">
+                        <span style="color: {% if assessment[1] in ['Very Low', 'Low'] %}#28a745{% elif assessment[1] == 'Moderate' %}#ffc107{% elif assessment[1] == 'High' %}#fd7e14{% else %}#dc3545{% endif %}; font-weight: bold;">
+                            {% if assessment[1] == 'Very Low' %}🟢 Very Low
+                            {% elif assessment[1] == 'Low' %}🟢 Low
+                            {% elif assessment[1] == 'Moderate' %}🟡 Moderate
+                            {% elif assessment[1] == 'High' %}🟠 High
+                            {% elif assessment[1] == 'Very High' %}🔴 Very High
+                            {% elif assessment[1] == 'Critical' %}🚨 Critical
+                            {% else %}{{ assessment[1] }}{% endif %}
+                        </span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 100px; height: 8px; background: #e9ecef; border-radius: 4px; margin-right: 10px;">
+                                <div style="width: {{ (assessment[2] * 100)|round }}%; height: 100%; background: {% if assessment[2] < 0.3 %}#28a745{% elif assessment[2] < 0.5 %}#ffc107{% elif assessment[2] < 0.7 %}#fd7e14{% else %}#dc3545{% endif %}; border-radius: 4px;"></div>
+                            </div>
+                            <span style="font-weight: bold;">{{ "%.4f"|format(assessment[2]) }}</span>
+                        </div>
+                    </td>
+                    <td style="padding: 12px;">
+                        <a href="{{ url_for('view_assessment', assessment_id=assessment[0]) }}" style="color: #228B22; text-decoration: none; font-weight: bold;">
+                            👁️ View Details
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if recent_assessments|length >= 5 %}
+    <div class="text-center mt-20">
+        <a href="{{ url_for('history') }}" class="btn btn-secondary">View All Assessments</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>💡 Health Tips</h2>
+    <div class="grid-2">
+        <div style="padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h4 style="color: #155724; margin-bottom: 10px;">🏃‍♂️ Stay Active</h4>
+            <p style="color: #155724; font-size: 14px;">Regular physical activity can reduce stroke risk by up to 27%. Aim for at least 150 minutes of moderate exercise per week.</p>
+        </div>
+        
+        <div style="padding: 15px; background: #d1ecf1; border-radius: 8px; border-left: 4px solid #0c5460;">
+            <h4 style="color: #0c5460; margin-bottom: 10px;">🥗 Healthy Diet</h4>
+            <p style="color: #0c5460; font-size: 14px;">A diet rich in fruits, vegetables, and whole grains while low in sodium can significantly reduce stroke risk.</p>
+        </div>
+        
+        <div style="padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #856404;">
+            <h4 style="color: #856404; margin-bottom: 10px;">🩺 Regular Checkups</h4>
+            <p style="color: #856404; font-size: 14px;">Monitor blood pressure, cholesterol, and blood sugar regularly. Early detection and management are key.</p>
+        </div>
+        
+        <div style="padding: 15px; background: #f8d7da; border-radius: 8px; border-left: 4px solid #721c24;">
+            <h4 style="color: #721c24; margin-bottom: 10px;">🚭 Avoid Smoking</h4>
+            <p style="color: #721c24; font-size: 14px;">Smoking doubles your stroke risk. If you smoke, quitting is the single most important step you can take.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🚨 Emergency Information</h2>
+    <div style="background: #f8d7da; padding: 20px; border-radius: 10px; border-left: 5px solid #dc3545;">
+        <h3 style="color: #721c24; margin-bottom: 15px;">F.A.S.T. - Stroke Warning Signs</h3>
+        <div class="grid-2">
+            <div>
+                <p style="color: #721c24;"><strong>F - Face:</strong> Face drooping or numbness</p>
+                <p style="color: #721c24;"><strong>A - Arms:</strong> Arm weakness or numbness</p>
+            </div>
+            <div>
+                <p style="color: #721c24;"><strong>S - Speech:</strong> Speech difficulty or slurred speech</p>
+                <p style="color: #721c24;"><strong>T - Time:</strong> Time to call emergency services immediately</p>
+            </div>
+        </div>
+        <p style="color: #721c24; margin-top: 15px; font-weight: bold;">
+            🚨 If you experience any of these symptoms, call emergency services immediately!
+        </p>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h2>📢 System Announcements</h2>
+        <div id="announcementsContainer">
+            <p style="color: #666; text-align: center; padding: 20px;">Loading announcements...</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>💬 Feedback & Support</h2>
+        <p style="color: #666; margin-bottom: 20px;">Help us improve the system by sharing your feedback and suggestions.</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <button onclick="showFeedbackModal()" class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f);">
+                💬 Submit Feedback
+            </button>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                <h4 style="color: #0c5460; margin: 0 0 10px 0;">📞 Need Help?</h4>
+                <p style="color: #0c5460; font-size: 14px; margin: 0;">
+                    Contact our support team for assistance.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div id="feedbackModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px;">
+        <h3 style="color: #228B22; margin-bottom: 20px;">💬 Submit Feedback</h3>
+        <form id="feedbackForm">
+            <div class="form-group">
+                <label>Subject:</label>
+                <input type="text" id="feedbackSubject" required placeholder="Brief description of your feedback">
+            </div>
+            <div class="form-group">
+                <label>Category:</label>
+                <select id="feedbackCategory" required>
+                    <option value="general">General Feedback</option>
+                    <option value="bug">Bug Report</option>
+                    <option value="feature">Feature Request</option>
+                    <option value="improvement">Improvement Suggestion</option>
+                    <option value="support">Support Request</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Message:</label>
+                <textarea id="feedbackMessage" rows="5" required placeholder="Please provide detailed feedback..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideFeedbackModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn">Submit Feedback</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Enhanced dashboard functionality with risk score visualization
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate health stats on load
+    const healthStats = document.getElementById('healthStats');
+    if (healthStats) {
+        healthStats.style.opacity = '0';
+        healthStats.style.transform = 'translateY(20px)';
+        healthStats.style.transition = 'all 0.5s ease';
+        
+        setTimeout(() => {
+            healthStats.style.opacity = '1';
+            healthStats.style.transform = 'translateY(0)';
+        }, 300);
+    }
+    
+    // Create enhanced risk score chart
+    {% if recent_assessments %}
+    setTimeout(() => {
+        createRiskScoreChart();
+        updateRiskCounts();
+        addChartInteractivity();
+    }, 500);
+    {% endif %}
+    
+    // Add hover effects to table rows
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+            this.style.transform = 'scale(1.01)';
+            this.style.transition = 'all 0.2s ease';
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = 'transparent';
+            this.style.transform = 'scale(1)';
+            this.style.boxShadow = 'none';
+        });
+    });
+    
+    // Animate risk level cards on load
+    const riskCards = document.querySelectorAll('[id$="RiskCount"]');
+    riskCards.forEach((card, index) => {
+        const parentCard = card.closest('div[style*="background: linear-gradient"]');
+        if (parentCard) {
+            parentCard.style.opacity = '0';
+            parentCard.style.transform = 'translateY(30px) scale(0.9)';
+            parentCard.style.transition = 'all 0.6s ease';
+            
+            setTimeout(() => {
+                parentCard.style.opacity = '1';
+                parentCard.style.transform = 'translateY(0) scale(1)';
+            }, 200 + (index * 150));
+        }
+    });
+    
+    // Show welcome message for new users
+    {% if not recent_assessments %}
+    setTimeout(() => {
+        showAlert('Welcome to your health dashboard! Take your first stroke risk assessment to get started.', 'info');
+    }, 1000);
+    {% endif %}
+});
+
+function addChartInteractivity() {
+    const canvas = document.getElementById('riskChart');
+    if (!canvas) return;
+    
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'absolute';
+    tooltip.style.background = 'rgba(0, 0, 0, 0.8)';
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '8px 12px';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.opacity = '0';
+    tooltip.style.transition = 'opacity 0.3s ease';
+    tooltip.style.zIndex = '1000';
+    document.body.appendChild(tooltip);
+    
+    const assessments = [
+        {% for assessment in recent_assessments %}
+        {
+            date: '{{ assessment[3][:10] }}',
+            score: {{ assessment[2] }},
+            level: '{{ assessment[1] }}'
+        },
+        {% endfor %}
+    ];
+    
+    canvas.addEventListener('mousemove', function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Check if mouse is near any data point
+        const padding = 60;
+        const chartWidth = canvas.width - 2 * padding;
+        const chartHeight = canvas.height - 2 * padding;
+        
+        let nearPoint = false;
+        
+        assessments.forEach((assessment, index) => {
+            const pointX = padding + (assessments.length > 1 ? (index / (assessments.length - 1)) * chartWidth : chartWidth / 2);
+            const pointY = padding + chartHeight - (assessment.score * chartHeight);
+            
+            const distance = Math.sqrt(Math.pow(x - pointX, 2) + Math.pow(y - pointY, 2));
+            
+            if (distance < 15) {
+                nearPoint = true;
+                tooltip.innerHTML = `
+                    <strong>Date:</strong> ${assessment.date}<br>
+                    <strong>Score:</strong> ${assessment.score.toFixed(4)}<br>
+                    <strong>Level:</strong> ${assessment.level}
+                `;
+                tooltip.style.left = (e.clientX + 10) + 'px';
+                tooltip.style.top = (e.clientY - 10) + 'px';
+                tooltip.style.opacity = '1';
+                canvas.style.cursor = 'pointer';
+            }
+        });
+        
+        if (!nearPoint) {
+            tooltip.style.opacity = '0';
+            canvas.style.cursor = 'default';
+        }
+    });
+    
+    canvas.addEventListener('mouseleave', function() {
+        tooltip.style.opacity = '0';
+        canvas.style.cursor = 'default';
+    });
+    
+    // Add click functionality to navigate to assessment details
+    canvas.addEventListener('click', function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const padding = 60;
+        const chartWidth = canvas.width - 2 * padding;
+        const chartHeight = canvas.height - 2 * padding;
+        
+        assessments.forEach((assessment, index) => {
+            const pointX = padding + (assessments.length > 1 ? (index / (assessments.length - 1)) * chartWidth : chartWidth / 2);
+            const pointY = padding + chartHeight - (assessment.score * chartHeight);
+            
+            const distance = Math.sqrt(Math.pow(x - pointX, 2) + Math.pow(y - pointY, 2));
+            
+            if (distance < 15) {
+                // Navigate to assessment history or details
+                window.location.href = '/history';
+            }
+        });
+    });
+}
+
+// Add CSS for enhanced styling
+const style = document.createElement('style');
+style.textContent = `
+    #riskScoreChart {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    #riskScoreChart:hover {
+        border-color: #007bff;
+        box-shadow: 0 8px 16px rgba(0,123,255,0.2) !important;
+        transform: translateY(-2px);
+    }
+    
+    #riskChart {
+        transition: all 0.3s ease;
+    }
+    
+    #riskChart:hover {
+        filter: brightness(1.05);
+    }
+    
+    .risk-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .risk-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+    }
+    
+    @keyframes pulse-glow {
+        0% { box-shadow: 0 0 5px rgba(0,123,255,0.3); }
+        50% { box-shadow: 0 0 20px rgba(0,123,255,0.6); }
+        100% { box-shadow: 0 0 5px rgba(0,123,255,0.3); }
+    }
+    
+    .chart-container {
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .stats-card {
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+        transform: scale(1.05);
+    }
+`;
+document.head.appendChild(style);
+
+function createRiskScoreChart() {
+    const canvas = document.getElementById('riskChart');
+    const ctx = canvas.getContext('2d');
+    
+    // Assessment data from server
+    const assessments = [
+        {% for assessment in recent_assessments %}
+        {
+            date: '{{ assessment[3][:10] }}',
+            score: {{ assessment[2] }},
+            level: '{{ assessment[1] }}'
+        },
+        {% endfor %}
+    ];
+    
+    // Sort by date
+    assessments.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Chart dimensions - larger for better visibility
+    const padding = 60;
+    const chartWidth = canvas.width - 2 * padding;
+    const chartHeight = canvas.height - 2 * padding;
+    
+    // Clear canvas with gradient background
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#f8f9fa');
+    gradient.addColorStop(1, '#e9ecef');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Enhanced grid lines and risk zones
+    const riskThresholds = [0.15, 0.30, 0.50, 0.70, 0.85, 1.0];
+    const riskLabels = ['Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Critical'];
+    const riskColors = ['#d4edda', '#d1ecf1', '#fff3cd', '#fed7aa', '#f8d7da', '#e2a2ff'];
+    
+    // Draw risk zone backgrounds
+    riskThresholds.forEach((threshold, index) => {
+        if (index > 0) {
+            const y1 = padding + chartHeight - (riskThresholds[index-1] * chartHeight);
+            const y2 = padding + chartHeight - (threshold * chartHeight);
+            
+            ctx.fillStyle = riskColors[index] + '60'; // Add transparency
+            ctx.fillRect(padding, y2, chartWidth, y1 - y2);
+        }
+    });
+    
+    // Enhanced grid lines
+    ctx.strokeStyle = '#dee2e6';
+    ctx.lineWidth = 1;
+    
+    riskThresholds.forEach((threshold, index) => {
+        const y = padding + chartHeight - (threshold * chartHeight);
+        
+        // Dashed lines for better visibility
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(padding + chartWidth, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Enhanced labels with background
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(padding - 80, y - 10, 75, 20);
+        
+        ctx.fillStyle = '#495057';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(riskLabels[index], padding - 10, y + 4);
+        
+        // Score labels on right
+        ctx.textAlign = 'left';
+        ctx.fillText(threshold.toFixed(2), padding + chartWidth + 10, y + 4);
+    });
+    
+    // Y-axis label
+    ctx.save();
+    ctx.translate(20, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#495057';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Risk Score', 0, 0);
+    ctx.restore();
+    
+    // X-axis label
+    ctx.fillStyle = '#495057';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Assessment Date', canvas.width / 2, canvas.height - 10);
+    
+    if (assessments.length > 1) {
+        // Enhanced line chart with gradient fill
+        const lineGradient = ctx.createLinearGradient(0, padding, 0, padding + chartHeight);
+        lineGradient.addColorStop(0, 'rgba(0, 123, 255, 0.3)');
+        lineGradient.addColorStop(1, 'rgba(0, 123, 255, 0.1)');
+        
+        // Fill area under curve
+        ctx.fillStyle = lineGradient;
+        ctx.beginPath();
+        ctx.moveTo(padding, padding + chartHeight);
+        
+        assessments.forEach((assessment, index) => {
+            const x = padding + (index / (assessments.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (assessment.score * chartHeight);
+            
+            if (index === 0) {
+                ctx.lineTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.lineTo(padding + chartWidth, padding + chartHeight);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Enhanced line with shadow
+        ctx.shadowColor = 'rgba(0, 123, 255, 0.3)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 2;
+        
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        
+        assessments.forEach((assessment, index) => {
+            const x = padding + (index / (assessments.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (assessment.score * chartHeight);
+            
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.stroke();
+        ctx.shadowColor = 'transparent';
+        
+        // Enhanced data points with larger circles and better colors
+        assessments.forEach((assessment, index) => {
+            const x = padding + (index / (assessments.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (assessment.score * chartHeight);
+            
+            // Point color based on risk level with better visibility
+            let pointColor = '#28a745';
+            let borderColor = '#1e7e34';
+            if (['Very Low', 'Low'].includes(assessment.level)) {
+                pointColor = '#28a745';
+                borderColor = '#1e7e34';
+            } else if (assessment.level === 'Moderate') {
+                pointColor = '#ffc107';
+                borderColor = '#e0a800';
+            } else if (assessment.level === 'High') {
+                pointColor = '#fd7e14';
+                borderColor = '#e8590c';
+            } else if (['Very High', 'Critical'].includes(assessment.level)) {
+                pointColor = '#dc3545';
+                borderColor = '#c82333';
+            }
+            
+            // Larger circles with gradient
+            const pointGradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
+            pointGradient.addColorStop(0, pointColor);
+            pointGradient.addColorStop(1, borderColor);
+            
+            ctx.fillStyle = pointGradient;
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // White border for better visibility
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Score value on hover area
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.font = 'bold 11px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(assessment.score.toFixed(3), x, y - 15);
+            
+            // Enhanced date labels with rotation
+            ctx.save();
+            ctx.translate(x, canvas.height - 30);
+            ctx.rotate(-Math.PI / 6);
+            ctx.fillStyle = '#495057';
+            ctx.font = 'bold 11px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(assessment.date, 0, 0);
+            ctx.restore();
+        });
+        
+    } else if (assessments.length === 1) {
+        // Enhanced single point display
+        const assessment = assessments[0];
+        const x = padding + chartWidth / 2;
+        const y = padding + chartHeight - (assessment.score * chartHeight);
+        
+        let pointColor = '#28a745';
+        if (['Very Low', 'Low'].includes(assessment.level)) pointColor = '#28a745';
+        else if (assessment.level === 'Moderate') pointColor = '#ffc107';
+        else if (assessment.level === 'High') pointColor = '#fd7e14';
+        else if (['Very High', 'Critical'].includes(assessment.level)) pointColor = '#dc3545';
+        
+        // Pulsing effect for single point
+        const pulseGradient = ctx.createRadialGradient(x, y, 0, x, y, 20);
+        pulseGradient.addColorStop(0, pointColor + '80');
+        pulseGradient.addColorStop(1, pointColor + '20');
+        
+        ctx.fillStyle = pulseGradient;
+        ctx.beginPath();
+        ctx.arc(x, y, 15, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.fillStyle = pointColor;
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        // Score and date labels
+        ctx.fillStyle = '#495057';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(assessment.score.toFixed(4), x, y - 25);
+        ctx.fillText(assessment.date, x, canvas.height - 20);
+    }
+    
+    // Enhanced chart title with better styling
+    ctx.fillStyle = '#1e3a5f';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Risk Score Progression Over Time', canvas.width / 2, 25);
+    
+    // Add legend
+    const legendY = canvas.height - 50;
+    const legendItems = [
+        { color: '#28a745', label: 'Low Risk' },
+        { color: '#ffc107', label: 'Moderate' },
+        { color: '#fd7e14', label: 'High' },
+        { color: '#dc3545', label: 'Critical' }
+    ];
+    
+    legendItems.forEach((item, index) => {
+        const x = padding + (index * 120);
+        
+        ctx.fillStyle = item.color;
+        ctx.beginPath();
+        ctx.arc(x, legendY, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.fillStyle = '#495057';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, x + 12, legendY + 4);
+    });
+}
+
+function updateRiskCounts() {
+    const assessments = [
+        {% for assessment in recent_assessments %}
+        {
+            level: '{{ assessment[1] }}',
+            score: {{ assessment[2] }},
+            date: '{{ assessment[3][:10] }}'
+        },
+        {% endfor %}
+    ];
+    
+    let lowCount = 0, moderateCount = 0, highCount = 0, criticalCount = 0;
+    let scores = [];
+    
+    assessments.forEach(assessment => {
+        scores.push(assessment.score);
+        
+        if (['Very Low', 'Low'].includes(assessment.level)) lowCount++;
+        else if (assessment.level === 'Moderate') moderateCount++;
+        else if (assessment.level === 'High') highCount++;
+        else if (['Very High', 'Critical'].includes(assessment.level)) criticalCount++;
+    });
+    
+    // Update count displays with animation
+    animateNumber('lowRiskCount', lowCount);
+    animateNumber('moderateRiskCount', moderateCount);
+    animateNumber('highRiskCount', highCount);
+    animateNumber('criticalRiskCount', criticalCount);
+    
+    // Calculate and display statistics
+    if (scores.length > 0) {
+        const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const minScore = Math.min(...scores);
+        const maxScore = Math.max(...scores);
+        
+        // Update statistics with animation
+        animateScore('avgRiskScore', avgScore);
+        animateScore('minRiskScore', minScore);
+        animateScore('maxRiskScore', maxScore);
+        
+        // Calculate trend direction
+        if (scores.length > 1) {
+            const recent = scores.slice(-2);
+            const trend = recent[1] - recent[0];
+            const trendElement = document.getElementById('trendDirection');
+            
+            if (trend > 0.01) {
+                trendElement.textContent = '↗️';
+                trendElement.style.color = '#dc3545';
+                trendElement.title = 'Risk increasing';
+            } else if (trend < -0.01) {
+                trendElement.textContent = '↘️';
+                trendElement.style.color = '#28a745';
+                trendElement.title = 'Risk decreasing';
+            } else {
+                trendElement.textContent = '→';
+                trendElement.style.color = '#6c757d';
+                trendElement.title = 'Risk stable';
+            }
+        }
+    }
+}
+
+function animateNumber(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    const startValue = parseInt(element.textContent) || 0;
+    const duration = 1000;
+    const startTime = performance.now();
+    
+    function updateNumber(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentValue = Math.round(startValue + (targetValue - startValue) * easeOutQuart);
+        
+        element.textContent = currentValue;
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateNumber);
+        }
+    }
+    
+    requestAnimationFrame(updateNumber);
+}
+
+function animateScore(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    const startValue = parseFloat(element.textContent) || 0;
+    const duration = 1500;
+    const startTime = performance.now();
+    
+    function updateScore(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentValue = startValue + (targetValue - startValue) * easeOutQuart;
+        
+        element.textContent = currentValue.toFixed(3);
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateScore);
+        }
+    }
+    
+    requestAnimationFrame(updateScore);
+}
+
+// Function to refresh dashboard data
+function refreshDashboard() {
+    location.reload();
+}
+
+// Auto-refresh every 5 minutes
+setInterval(refreshDashboard, 300000);
+
+// Interactive function to filter assessments by risk level
+function filterAssessmentsByRisk(riskCategory) {
+    // Add visual feedback
+    const clickedCard = event.currentTarget;
+    clickedCard.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        clickedCard.style.transform = 'scale(1)';
+    }, 150);
+    
+    // Navigate to history page with filter parameter
+    const url = new URL('/history', window.location.origin);
+    url.searchParams.set('filter', riskCategory);
+    window.location.href = url.toString();
+}
+
+// Add click handlers for interactive elements
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.risk-score-bar')) {
+        const assessment = e.target.closest('tr');
+        const assessmentId = assessment.querySelector('a').href.split('/').pop();
+        window.location.href = `/assessment/${assessmentId}`;
+    }
+});
+
+// Enhanced chart refresh function
+function refreshChart() {
+    const canvas = document.getElementById('riskChart');
+    if (canvas) {
+        // Add loading animation
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0, 123, 255, 0.1)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#007bff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Refreshing chart...', canvas.width / 2, canvas.height / 2);
+        
+        setTimeout(() => {
+            createRiskScoreChart();
+            updateRiskCounts();
+        }, 500);
+    }
+}
+
+// Keyboard shortcuts for better accessibility
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+            case 'r':
+                e.preventDefault();
+                refreshChart();
+                break;
+            case 'h':
+                e.preventDefault();
+                window.location.href = '/history';
+                break;
+            case 'n':
+                e.preventDefault();
+                window.location.href = '/assessment';
+                break;
+        }
+    }
+});
+
+// Add accessibility improvements
+function addAccessibilityFeatures() {
+    // Add ARIA labels to interactive elements
+    const riskCards = document.querySelectorAll('.risk-card');
+    riskCards.forEach((card, index) => {
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `View ${card.textContent.trim()} assessments`);
+        
+        // Add keyboard support
+        card.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
+        });
+    });
+    
+    // Add chart accessibility
+    const canvas = document.getElementById('riskChart');
+    if (canvas) {
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', 'Risk score trend chart showing assessment history');
+    }
+}
+
+// Initialize accessibility features
+setTimeout(addAccessibilityFeatures, 1000);
+
+// Load announcements
+function loadAnnouncements() {
+    fetch('/get_announcements')
+        .then(response => response.json())
+        .then(announcements => {
+            const container = document.getElementById('announcementsContainer');
+            if (announcements.length > 0) {
+                container.innerHTML = announcements.map(ann => `
+                    <div style="background: ${getAnnouncementColor(ann.type)}; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${getAnnouncementBorderColor(ann.type)};">
+                        <h4 style="margin: 0 0 8px 0; color: #1e3a5f;">${getAnnouncementIcon(ann.type)} ${ann.title}</h4>
+                        <p style="margin: 0; color: #333; line-height: 1.4;">${ann.content}</p>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No announcements at this time.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading announcements:', error);
+        });
+}
+
+function getAnnouncementColor(type) {
+    switch(type) {
+        case 'success': return '#d4edda';
+        case 'warning': return '#fff3cd';
+        case 'danger': return '#f8d7da';
+        default: return '#d1ecf1';
+    }
+}
+
+function getAnnouncementBorderColor(type) {
+    switch(type) {
+        case 'success': return '#228B22';
+        case 'warning': return '#d4af37';
+        case 'danger': return '#dc3545';
+        default: return '#1e3a5f';
+    }
+}
+
+function getAnnouncementIcon(type) {
+    switch(type) {
+        case 'success': return '✅';
+        case 'warning': return '⚠️';
+        case 'danger': return '🚨';
+        default: return 'ℹ️';
+    }
+}
+
+// Feedback form functions
+function showFeedbackModal() {
+    document.getElementById('feedbackModal').style.display = 'block';
+}
+
+function hideFeedbackModal() {
+    document.getElementById('feedbackModal').style.display = 'none';
+    document.getElementById('feedbackForm').reset();
+}
+
+document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const feedbackData = {
+        subject: document.getElementById('feedbackSubject').value,
+        message: document.getElementById('feedbackMessage').value,
+        category: document.getElementById('feedbackCategory').value
+    };
+    
+    fetch('/submit_feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Feedback submitted successfully! Thank you for your input.');
+            hideFeedbackModal();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting feedback.');
+    });
+});
+
+// Load announcements on page load
+loadAnnouncements();
+
+// Real-time user status check
+function checkUserStatus() {
+    fetch('/check_user_status')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.active) {
+                alert('⚠️ Your account has been deactivated by an administrator.\n\nYou will be redirected to the reactivation request page.');
+                window.location.href = '/deactivated?user_id=' + data.user_id;
+            }
+        })
+        .catch(error => {
+            console.error('Error checking user status:', error);
+        });
+}
+
+// Check user status every 30 seconds
+setInterval(checkUserStatus, 30000);
+
+// Check immediately on page load
+setTimeout(checkUserStatus, 2000);
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Recommendation Management - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">📝 Health Recommendation Management</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Manage health education content and recommendation templates</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📋 Current Recommendation Templates</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h4 style="color: #1e7e34; margin-bottom: 10px;">🟢 Low Risk Recommendations</h4>
+            <p style="color: #495057; font-size: 14px; margin-bottom: 15px;">
+                "Maintain your healthy lifestyle with regular exercise and balanced nutrition..."
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">✏️ Edit</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">👁️ Preview</button>
+            </div>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <h4 style="color: #856404; margin-bottom: 10px;">🟡 Moderate Risk Recommendations</h4>
+            <p style="color: #495057; font-size: 14px; margin-bottom: 15px;">
+                "Consider lifestyle modifications and consult with your healthcare provider..."
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">✏️ Edit</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">👁️ Preview</button>
+            </div>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545;">
+            <h4 style="color: #721c24; margin-bottom: 10px;">🔴 High Risk Recommendations</h4>
+            <p style="color: #495057; font-size: 14px; margin-bottom: 15px;">
+                "Immediate medical consultation recommended. Please contact your healthcare provider..."
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">✏️ Edit</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">👁️ Preview</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📚 Health Education Materials</h2>
+    <p style="color: #666; text-align: center; padding: 40px;">
+        This feature would allow admins to manage health education content, stroke prevention tips, and educational resources shown to users based on their risk levels.
+    </p>
+</div>
+{% endblock %}

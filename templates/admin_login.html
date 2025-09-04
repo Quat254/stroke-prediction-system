@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - Omeka{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+    <h1 style="color: #d4af37; text-align: center; margin-bottom: 30px;">
+        🛡️ Admin Login
+    </h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'error' if category == 'error' else category }}" style="margin-bottom: 20px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="form-group">
+            <label for="username">
+                👤 Admin Username:
+            </label>
+            <input type="text" id="username" name="username" required 
+                   placeholder="Enter admin username">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">
+                🔒 Password:
+            </label>
+            <input type="password" id="password" name="password" required 
+                   placeholder="Enter admin password">
+        </div>
+        
+        <button type="submit" class="btn" style="background: linear-gradient(45deg, #d4af37, #1e3a5f);">
+            🚀 Login as Admin
+        </button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <p style="color: #666; margin-bottom: 15px;">Not an admin?</p>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            ← Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}

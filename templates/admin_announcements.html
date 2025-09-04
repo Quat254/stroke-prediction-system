@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}System Announcements - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">📢 System Announcements</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Manage system-wide announcements for users</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="showAddAnnouncementModal()" class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f);">
+                ➕ Add Announcement
+            </button>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📊 Announcement Overview</h2>
+    <div style="display: flex; justify-content: space-around; text-align: center;">
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #228B22;">{{ announcements|length }}</div>
+            <div style="color: #666;">Total Announcements</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #1e3a5f;">{{ announcements|selectattr('4', 'equalto', 1)|list|length }}</div>
+            <div style="color: #666;">Active/Published</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #6c757d;">{{ announcements|selectattr('4', 'equalto', 0)|list|length }}</div>
+            <div style="color: #666;">Inactive/Draft</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📢 All Announcements</h2>
+    {% if announcements %}
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            {% for announcement in announcements %}
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid 
+                            {% if announcement[3] == 'success' %}#228B22
+                            {% elif announcement[3] == 'warning' %}#d4af37
+                            {% elif announcement[3] == 'danger' %}#dc3545
+                            {% else %}#1e3a5f{% endif %};">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <h4 style="color: #1e3a5f; margin: 0 0 10px 0;">
+                                {% if announcement[3] == 'success' %}✅
+                                {% elif announcement[3] == 'warning' %}⚠️
+                                {% elif announcement[3] == 'danger' %}🚨
+                                {% else %}ℹ️{% endif %}
+                                {{ announcement[1] }}
+                            </h4>
+                            <p style="color: #666; margin: 0; line-height: 1.5;">{{ announcement[2] }}</p>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; align-items: end; gap: 10px; margin-left: 20px;">
+                            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
+                                         {% if announcement[4] %}background: #d4edda; color: #155724;{% else %}background: #f8d7da; color: #721c24;{% endif %}">
+                                {% if announcement[4] %}📢 Published{% else %}📝 Draft{% endif %}
+                            </span>
+                            
+                            <div style="display: flex; gap: 5px;">
+                                <button onclick="toggleAnnouncement({{ announcement[0] }})" 
+                                        class="btn" style="padding: 4px 8px; font-size: 12px; 
+                                        {% if announcement[4] %}background: #dc3545;{% else %}background: #228B22;{% endif %}">
+                                    {% if announcement[4] %}🚫 Unpublish{% else %}📢 Publish{% endif %}
+                                </button>
+                                <button onclick="editAnnouncement({{ announcement[0] }}, '{{ announcement[1] }}', '{{ announcement[2] }}', '{{ announcement[3] }}')" 
+                                        class="btn" style="padding: 4px 8px; font-size: 12px; background: #d4af37;">
+                                    ✏️ Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                        <div style="font-size: 12px; color: #999;">
+                            <strong>Created by:</strong> {{ announcement[7] }}<br>
+                            <strong>Created:</strong> {{ announcement[5][:16] if announcement[5] else 'N/A' }}
+                        </div>
+                        {% if announcement[6] %}
+                            <div style="font-size: 12px; color: #dc3545; text-align: right;">
+                                <strong>⏰ Expires:</strong> {{ announcement[6][:16] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h3>📢 No Announcements Found</h3>
+            <p>Create your first system announcement to communicate with users.</p>
+            <button onclick="showAddAnnouncementModal()" class="btn" style="margin-top: 20px;">
+                ➕ Create First Announcement
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add Announcement Modal -->
+<div id="addAnnouncementModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px;">
+        <h3 style="color: #228B22; margin-bottom: 20px;">➕ Add New Announcement</h3>
+        <form id="addAnnouncementForm">
+            <div class="form-group">
+                <label>Title:</label>
+                <input type="text" id="announcementTitle" required placeholder="e.g., System Maintenance Notice">
+            </div>
+            <div class="form-group">
+                <label>Content:</label>
+                <textarea id="announcementContent" rows="4" required placeholder="Enter the announcement message..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Type:</label>
+                <select id="announcementType" required>
+                    <option value="info">ℹ️ Information</option>
+                    <option value="success">✅ Success/Good News</option>
+                    <option value="warning">⚠️ Warning</option>
+                    <option value="danger">🚨 Critical/Urgent</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Expires At (Optional):</label>
+                <input type="datetime-local" id="announcementExpires">
+                <small style="color: #666;">Leave empty for permanent announcement</small>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideAddAnnouncementModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn">Add Announcement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Announcement Modal -->
+<div id="editAnnouncementModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px;">
+        <h3 style="color: #d4af37; margin-bottom: 20px;">✏️ Edit Announcement</h3>
+        <form id="editAnnouncementForm">
+            <input type="hidden" id="editAnnouncementId">
+            <div class="form-group">
+                <label>Title:</label>
+                <input type="text" id="editAnnouncementTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Content:</label>
+                <textarea id="editAnnouncementContent" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Type:</label>
+                <select id="editAnnouncementType" required>
+                    <option value="info">ℹ️ Information</option>
+                    <option value="success">✅ Success/Good News</option>
+                    <option value="warning">⚠️ Warning</option>
+                    <option value="danger">🚨 Critical/Urgent</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Expires At (Optional):</label>
+                <input type="datetime-local" id="editAnnouncementExpires">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideEditAnnouncementModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn" style="background: #d4af37;">Update Announcement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddAnnouncementModal() {
+    document.getElementById('addAnnouncementModal').style.display = 'block';
+}
+
+function hideAddAnnouncementModal() {
+    document.getElementById('addAnnouncementModal').style.display = 'none';
+    document.getElementById('addAnnouncementForm').reset();
+}
+
+function showEditAnnouncementModal() {
+    document.getElementById('editAnnouncementModal').style.display = 'block';
+}
+
+function hideEditAnnouncementModal() {
+    document.getElementById('editAnnouncementModal').style.display = 'none';
+    document.getElementById('editAnnouncementForm').reset();
+}
+
+document.getElementById('addAnnouncementForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const announcementData = {
+        title: document.getElementById('announcementTitle').value,
+        content: document.getElementById('announcementContent').value,
+        type: document.getElementById('announcementType').value,
+        expires_at: document.getElementById('announcementExpires').value || null
+    };
+    
+    fetch('/admin/add_announcement', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(announcementData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Announcement added successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the announcement.');
+    });
+});
+
+function editAnnouncement(id, title, content, type) {
+    document.getElementById('editAnnouncementId').value = id;
+    document.getElementById('editAnnouncementTitle').value = title;
+    document.getElementById('editAnnouncementContent').value = content;
+    document.getElementById('editAnnouncementType').value = type;
+    showEditAnnouncementModal();
+}
+
+function toggleAnnouncement(announcementId) {
+    if (confirm('Are you sure you want to change this announcement\'s publication status?')) {
+        fetch(`/admin/toggle_announcement/${announcementId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating announcement status.');
+        });
+    }
+}
+</script>
+
+<style>
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #1e3a5f;
+    box-shadow: 0 0 5px rgba(30, 58, 95, 0.3);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Nearby Health Facilities - Omeka{% endblock %}
+
+{% block content %}
+<style>
+    #map {
+        height: 500px;
+        width: 100%;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .facility-list {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    
+    .facility-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid #228B22;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .facility-item:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    
+    .facility-name {
+        font-weight: bold;
+        color: #1e3a5f;
+        margin-bottom: 5px;
+    }
+    
+    .facility-address {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    
+    .facility-distance {
+        color: #228B22;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .facility-phone {
+        color: #1e3a5f;
+        font-size: 0.9rem;
+    }
+    
+    .emergency-banner {
+        background: linear-gradient(45deg, #dc3545, #c82333);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .emergency-icon {
+        font-size: 2rem;
+    }
+    
+    .emergency-text h3 {
+        margin-bottom: 5px;
+    }
+    
+    .emergency-text p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    
+    .emergency-number {
+        background: white;
+        color: #dc3545;
+        padding: 10px 20px;
+        border-radius: 30px;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-left: auto;
+    }
+</style>
+
+<div class="card">
+    <h2>🏥 Nearby Health Facilities</h2>
+    <p style="margin-bottom: 20px; color: #1e3a5f;">Find healthcare providers near your location for immediate assistance.</p>
+    
+    <div class="emergency-banner">
+        <div class="emergency-icon">🚨</div>
+        <div class="emergency-text">
+            <h3>In case of emergency</h3>
+            <p>If you're experiencing stroke symptoms, call emergency services immediately</p>
+        </div>
+        <div class="emergency-number">911</div>
+    </div>
+    
+    <div class="grid-2">
+        <div>
+            <div id="map"></div>
+            <div style="text-align: center; margin-top: 10px;">
+                <button id="getCurrentLocation" class="btn btn-secondary">
+                    📍 Use My Current Location
+                </button>
+            </div>
+        </div>
+        
+        <div>
+            <h3 style="color: #228B22; margin-bottom: 15px;">📋 Nearest Facilities</h3>
+            
+            <div class="form-group">
+                <label for="facility_type">Facility Type</label>
+                <select id="facility_type" class="form-control">
+                    <option value="hospital">Hospitals</option>
+                    <option value="clinic">Clinics</option>
+                    <option value="emergency">Emergency Centers</option>
+                    <option value="pharmacy">Pharmacies</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="search_radius">Search Radius (km)</label>
+                <input type="range" id="search_radius" min="1" max="20" value="5" class="form-control">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>1 km</span>
+                    <span id="radius_value">5 km</span>
+                    <span>20 km</span>
+                </div>
+            </div>
+            
+            <div class="facility-list" id="facilityList">
+                <div class="facility-item">
+                    <div class="facility-name">Central Hospital</div>
+                    <div class="facility-address">123 Main Street, City</div>
+                    <div class="facility-phone">📞 (555) 123-4567</div>
+                    <div class="facility-distance">1.2 km away</div>
+                </div>
+                
+                <div class="facility-item">
+                    <div class="facility-name">City Medical Center</div>
+                    <div class="facility-address">456 Oak Avenue, City</div>
+                    <div class="facility-phone">📞 (555) 987-6543</div>
+                    <div class="facility-distance">2.5 km away</div>
+                </div>
+                
+                <div class="facility-item">
+                    <div class="facility-name">Community Health Clinic</div>
+                    <div class="facility-address">789 Pine Road, City</div>
+                    <div class="facility-phone">📞 (555) 456-7890</div>
+                    <div class="facility-distance">3.8 km away</div>
+                </div>
+                
+                <div class="facility-item">
+                    <div class="facility-name">Emergency Care Center</div>
+                    <div class="facility-address">101 Cedar Lane, City</div>
+                    <div class="facility-phone">📞 (555) 321-0987</div>
+                    <div class="facility-distance">4.3 km away</div>
+                </div>
+                
+                <div class="facility-item">
+                    <div class="facility-name">University Hospital</div>
+                    <div class="facility-address">202 College Blvd, City</div>
+                    <div class="facility-phone">📞 (555) 789-0123</div>
+                    <div class="facility-distance">5.1 km away</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🚑 Stroke Emergency Response</h2>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h3 style="color: #dc3545; margin-bottom: 15px;">Recognize Stroke Symptoms (F.A.S.T.)</h3>
+        
+        <div class="grid-2">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 2rem;">😐</div>
+                <div>
+                    <h4>Face Drooping</h4>
+                    <p>Does one side of the face droop or is it numb?</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 2rem;">💪</div>
+                <div>
+                    <h4>Arm Weakness</h4>
+                    <p>Is one arm weak or numb?</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 2rem;">🗣️</div>
+                <div>
+                    <h4>Speech Difficulty</h4>
+                    <p>Is speech slurred or strange?</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 2rem;">⏰</div>
+                <div>
+                    <h4>Time to Call 911</h4>
+                    <p>If any of these signs, call emergency immediately</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update radius value display
+    const radiusSlider = document.getElementById('search_radius');
+    const radiusValue = document.getElementById('radius_value');
+    
+    radiusSlider.addEventListener('input', function() {
+        radiusValue.textContent = `${this.value} km`;
+    });
+    
+    // Simulate map initialization (in a real app, this would use Google Maps or similar)
+    const mapElement = document.getElementById('map');
+    mapElement.innerHTML = `
+        <div style="height: 100%; display: flex; justify-content: center; align-items: center; background: #e9ecef; color: #6c757d; font-size: 1.2rem; text-align: center;">
+            Map would load here with nearby health facilities.<br>
+            (Requires Google Maps API key for actual implementation)
+        </div>
+    `;
+    
+    // Facility item click handler
+    const facilityItems = document.querySelectorAll('.facility-item');
+    facilityItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const facilityName = this.querySelector('.facility-name').textContent;
+            showAlert(`Getting directions to ${facilityName}...`, 'info');
+        });
+    });
+    
+    // Get current location button
+    document.getElementById('getCurrentLocation').addEventListener('click', function() {
+        showAlert('Locating your position...', 'info');
+        setTimeout(() => {
+            showAlert('Location found! Showing nearby health facilities.', 'success');
+        }, 1500);
+    });
+    
+    // Facility type change handler
+    document.getElementById('facility_type').addEventListener('change', function() {
+        const facilityType = this.value;
+        showAlert(`Showing nearby ${facilityType}s...`, 'info');
+    });
+});
+</script>
+{% endblock %}

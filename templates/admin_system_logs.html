@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">📋 System Activity Logs</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">Monitor system events and administrative actions</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div style="text-align: center; padding: 60px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c757d;">
+    <h2 style="color: #495057; margin-bottom: 20px;">📋 System Logs</h2>
+    <p style="color: #495057; font-size: 1.1rem; margin-bottom: 20px;">
+        This feature would display comprehensive system activity logs including:
+    </p>
+    <ul style="color: #495057; text-align: left; max-width: 500px; margin: 0 auto 20px;">
+        <li>User registration and login events</li>
+        <li>Assessment completion activities</li>
+        <li>Admin actions and configuration changes</li>
+        <li>System errors and performance metrics</li>
+        <li>Database operations and backups</li>
+        <li>Security events and access attempts</li>
+    </ul>
+    <p style="color: #666; font-style: italic;">Implementation would include real-time log monitoring and filtering capabilities.</p>
+</div>
+{% endblock %}

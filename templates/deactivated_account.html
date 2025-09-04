@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Account Deactivated - Omeka{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #dc3545; margin-bottom: 20px;">🚫 Account Deactivated</h1>
+        <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
+        <p style="color: #1e3a5f; font-size: 1.2rem; line-height: 1.6;">
+            Your account has been temporarily deactivated by an administrator. 
+            You cannot access assessments or other system features at this time.
+        </p>
+    </div>
+    
+    <div style="background: #f8d7da; padding: 20px; border-radius: 10px; border-left: 5px solid #dc3545; margin-bottom: 30px;">
+        <h3 style="color: #721c24; margin-bottom: 15px;">📋 What this means:</h3>
+        <ul style="color: #721c24; line-height: 1.8;">
+            <li>You cannot perform new stroke risk assessments</li>
+            <li>You cannot view your assessment history</li>
+            <li>You cannot update your profile information</li>
+            <li>Your previous data is safely stored and will be restored when reactivated</li>
+        </ul>
+    </div>
+    
+    <div style="background: #d1ecf1; padding: 20px; border-radius: 10px; border-left: 5px solid #0c5460; margin-bottom: 30px;">
+        <h3 style="color: #0c5460; margin-bottom: 15px;">🔄 Request Reactivation</h3>
+        <p style="color: #0c5460; margin-bottom: 20px;">
+            If you believe this deactivation was made in error or you'd like to request reactivation, 
+            please contact the administrator using the form below.
+        </p>
+        
+        <button onclick="showReactivationModal()" class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f);">
+            📝 Request Account Reactivation
+        </button>
+    </div>
+    
+    <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 5px solid #856404; margin-bottom: 30px;">
+        <h3 style="color: #856404; margin-bottom: 15px;">📞 Contact Support</h3>
+        <div style="color: #856404;">
+            <p>Please contact support for assistance with your account.</p>
+        </div>
+    </div>
+    
+    <div style="text-align: center;">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            ← Return to Home Page
+        </a>
+    </div>
+</div>
+
+<!-- Reactivation Request Modal -->
+<div id="reactivationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px;">
+        <h3 style="color: #228B22; margin-bottom: 20px;">📝 Request Account Reactivation</h3>
+        <p style="color: #666; margin-bottom: 20px;">
+            Please explain why you would like your account reactivated. An administrator will review your request.
+        </p>
+        
+        <form id="reactivationForm">
+            <input type="hidden" id="userId" value="">
+            <div class="form-group">
+                <label>Reason for Reactivation Request:</label>
+                <textarea id="reactivationMessage" rows="5" required 
+                         placeholder="Please explain why you need your account reactivated."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideReactivationModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn">Submit Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const userId = urlParams.get('user_id');
+
+function showReactivationModal() {
+    document.getElementById('userId').value = userId || '';
+    document.getElementById('reactivationModal').style.display = 'block';
+}
+
+function hideReactivationModal() {
+    document.getElementById('reactivationModal').style.display = 'none';
+    document.getElementById('reactivationForm').reset();
+}
+
+document.getElementById('reactivationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const requestData = {
+        user_id: document.getElementById('userId').value,
+        message: document.getElementById('reactivationMessage').value
+    };
+    
+    fetch('/submit_reactivation_request', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Reactivation request submitted successfully! You will be contacted once your request is reviewed.');
+            hideReactivationModal();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting your request. Please try again or contact support directly.');
+    });
+});
+
+if (userId) {
+    document.getElementById('userId').value = userId;
+}
+</script>
+
+<style>
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #1e3a5f;
+    box-shadow: 0 0 5px rgba(30, 58, 95, 0.3);
+}
+
+.card {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}User Feedback - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="color: #d4af37; margin-bottom: 10px;">💬 User Feedback Management</h1>
+            <p style="color: #1e3a5f; font-size: 1.1rem;">View and respond to user feedback and suggestions</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📊 Feedback Overview</h2>
+    <div style="display: flex; justify-content: space-around; text-align: center;">
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #228B22;">{{ feedback_list|length }}</div>
+            <div style="color: #666;">Total Feedback</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #d4af37;">{{ feedback_stats.get('pending', 0) }}</div>
+            <div style="color: #666;">Pending Response</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #1e3a5f;">{{ feedback_stats.get('responded', 0) }}</div>
+            <div style="color: #666;">Responded</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #dc3545;">{{ feedback_list|selectattr('3', 'equalto', 'reactivation')|list|length }}</div>
+            <div style="color: #666;">Reactivation Requests</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; font-weight: bold; color: #6c757d;">{{ feedback_stats.get('closed', 0) }}</div>
+            <div style="color: #666;">Closed</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>💬 User Feedback</h2>
+    {% if feedback_list %}
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            {% for feedback in feedback_list %}
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid 
+                            {% if feedback[3] == 'reactivation' %}#dc3545
+                            {% elif feedback[4] == 'pending' %}#d4af37
+                            {% elif feedback[4] == 'responded' %}#228B22
+                            {% else %}#6c757d{% endif %};">
+                    
+                    {% if feedback[3] == 'reactivation' %}
+                        <div style="background: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #dc3545;">
+                            <strong style="color: #721c24;">🔄 ACCOUNT REACTIVATION REQUEST</strong>
+                        </div>
+                    {% endif %}
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <h4 style="color: #1e3a5f; margin: 0 0 5px 0;">
+                                {% if feedback[3] == 'reactivation' %}🔄 {% endif %}{{ feedback[1] }}
+                            </h4>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                                <strong>From:</strong> {{ feedback[7] }} ({{ feedback[6] }}) | 
+                                <strong>Category:</strong> 
+                                <span style="{% if feedback[3] == 'reactivation' %}color: #dc3545; font-weight: bold;{% endif %}">
+                                    {{ feedback[3] }}
+                                </span> | 
+                                <strong>Date:</strong> {{ feedback[5][:16] if feedback[5] else 'N/A' }}
+                            </div>
+                            <p style="color: #333; margin: 0; line-height: 1.5; background: white; padding: 15px; border-radius: 5px;">
+                                {{ feedback[2] }}
+                            </p>
+                        </div>
+                        
+                        <div style="margin-left: 20px;">
+                            <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
+                                         {% if feedback[4] == 'pending' %}background: #fff3cd; color: #856404;
+                                         {% elif feedback[4] == 'responded' %}background: #d4edda; color: #155724;
+                                         {% else %}background: #e2e3e5; color: #383d41;{% endif %}">
+                                {% if feedback[4] == 'pending' %}⏳ Pending
+                                {% elif feedback[4] == 'responded' %}✅ Responded
+                                {% else %}🔒 Closed{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if feedback[8] %}
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                            <h5 style="color: #228B22; margin: 0 0 10px 0;">📝 Admin Response:</h5>
+                            <div style="background: #d4edda; padding: 15px; border-radius: 5px; border-left: 4px solid #228B22;">
+                                <p style="margin: 0; color: #155724;">{{ feedback[8] }}</p>
+                                <div style="font-size: 12px; color: #155724; margin-top: 10px;">
+                                    <strong>Responded by:</strong> {{ feedback[10] if feedback[10] else 'Unknown' }} | 
+                                    <strong>Date:</strong> {{ feedback[9][:16] if feedback[9] else 'N/A' }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if feedback[4] == 'pending' %}
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                            {% if feedback[3] == 'reactivation' %}
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button onclick="quickReactivateUser('{{ feedback[6] }}')" 
+                                            class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f); padding: 8px 16px; font-size: 14px;">
+                                        ✅ Quick Reactivate User
+                                    </button>
+                                    <button onclick="showResponseModal({{ feedback[0] }}, '{{ feedback[1] }}', '{{ feedback[6] }}')" 
+                                            class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">
+                                        📝 Respond with Message
+                                    </button>
+                                </div>
+                            {% else %}
+                                <button onclick="showResponseModal({{ feedback[0] }}, '{{ feedback[1] }}', '{{ feedback[6] }}')" 
+                                        class="btn" style="background: linear-gradient(45deg, #228B22, #1e3a5f);">
+                                    📝 Respond to Feedback
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h3>💬 No Feedback Found</h3>
+            <p>No user feedback has been submitted yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Response Modal -->
+<div id="responseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px;">
+        <h3 style="color: #228B22; margin-bottom: 20px;">📝 Respond to Feedback</h3>
+        <div id="feedbackDetails" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <!-- Feedback details will be populated here -->
+        </div>
+        <form id="responseForm">
+            <input type="hidden" id="feedbackId">
+            <div class="form-group">
+                <label>Your Response:</label>
+                <textarea id="adminResponse" rows="5" required placeholder="Enter your response to the user..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="hideResponseModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn">Send Response</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showResponseModal(feedbackId, subject, username) {
+    document.getElementById('feedbackId').value = feedbackId;
+    document.getElementById('feedbackDetails').innerHTML = `
+        <h4 style="color: #1e3a5f; margin: 0 0 10px 0;">Responding to: ${subject}</h4>
+        <p style="color: #666; margin: 0;">From user: <strong>${username}</strong></p>
+    `;
+    document.getElementById('responseModal').style.display = 'block';
+}
+
+function hideResponseModal() {
+    document.getElementById('responseModal').style.display = 'none';
+    document.getElementById('responseForm').reset();
+}
+
+document.getElementById('responseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const feedbackId = document.getElementById('feedbackId').value;
+    const responseData = {
+        response: document.getElementById('adminResponse').value
+    };
+    
+    fetch(`/admin/respond_feedback/${feedbackId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(responseData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Response sent successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while sending the response.');
+    });
+});
+
+function quickReactivateUser(username) {
+    if (confirm(`Are you sure you want to reactivate the account for user "${username}"?\n\nThis will immediately restore their access to the system.`)) {
+        fetch('/admin/quick_reactivate_user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: username })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${data.message}\n\nThe user can now log in and access the system normally.`);
+                location.reload(); // Refresh to update the feedback status
+            } else {
+                alert('❌ Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ An error occurred while reactivating the user. Please try again or use the User Management page.');
+        });
+    }
+}
+</script>
+
+<style>
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #1e3a5f;
+    box-shadow: 0 0 5px rgba(30, 58, 95, 0.3);
+}
+</style>
+{% endblock %}

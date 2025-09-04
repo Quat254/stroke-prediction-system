@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}New Assessment - Omeka{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>🔍 Stroke Risk Assessment</h2>
+    <p style="margin-bottom: 30px; color: #1e3a5f;">Complete this comprehensive health assessment to evaluate your stroke risk factors.</p>
+    
+    <form id="assessmentForm">
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="age">🎂 Age (years) *</label>
+                <input type="number" id="age" name="age" min="1" max="120" required placeholder="Auto-calculated from DOB" readonly style="background-color: #f2f2f2;">
+                <small style="color: #6c757d;">Automatically calculated from your date of birth</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">👫 Gender *</label>
+                <select id="gender" name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="hypertension">🩺 Hypertension (High Blood Pressure) *</label>
+                <select id="hypertension" name="hypertension" required>
+                    <option value="">Select</option>
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <small style="color: #6c757d;">Blood pressure consistently above 140/90 mmHg</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="heart_disease">❤️ Heart Disease *</label>
+                <select id="heart_disease" name="heart_disease" required>
+                    <option value="">Select</option>
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+                <small style="color: #6c757d;">Any diagnosed heart condition</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="ever_married">💍 Marital Status *</label>
+                <select id="ever_married" name="ever_married" required>
+                    <option value="">Select</option>
+                    <option value="No">Never Married</option>
+                    <option value="Yes">Married/Previously Married</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="work_type">💼 Work Type *</label>
+                <select id="work_type" name="work_type" required>
+                    <option value="">Select Work Type</option>
+                    <option value="Private">Private Sector</option>
+                    <option value="Self-employed">Self-employed</option>
+                    <option value="Govt_job">Government Job</option>
+                    <option value="children">Student/Child</option>
+                    <option value="Never_worked">Never Worked</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="residence_type">🏠 Residence Type *</label>
+                <select id="residence_type" name="residence_type" required>
+                    <option value="">Select</option>
+                    <option value="Urban">Urban</option>
+                    <option value="Rural">Rural</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="avg_glucose_level">🍯 Average Glucose Level (mg/dL) *</label>
+                <input type="number" id="avg_glucose_level" name="avg_glucose_level" min="50" max="500" step="0.1" required placeholder="e.g., 95.5">
+                <small style="color: #6c757d;">Normal: 70-100, Pre-diabetes: 100-125, Diabetes: ≥126</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="bmi">⚖️ BMI (Body Mass Index) *</label>
+                <input type="number" id="bmi" name="bmi" min="10" max="60" step="0.1" required placeholder="e.g., 24.5">
+                <small style="color: #6c757d;">Normal: 18.5-24.9, Overweight: 25-29.9, Obese: ≥30</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="smoking_status">🚬 Smoking Status *</label>
+                <select id="smoking_status" name="smoking_status" required>
+                    <option value="">Select</option>
+                    <option value="never smoked">Never Smoked</option>
+                    <option value="formerly smoked">Formerly Smoked</option>
+                    <option value="smokes">Currently Smokes</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #ffc107;">
+            <h4 style="color: #856404; margin-bottom: 10px;">📋 Assessment Notes</h4>
+            <ul style="color: #856404; margin-left: 20px;">
+                <li>All fields marked with * are required</li>
+                <li>Provide accurate information for the most reliable assessment</li>
+                <li>This assessment takes approximately 2-3 minutes to complete</li>
+                <li>Your data is encrypted and stored securely</li>
+            </ul>
+        </div>
+        
+        <button type="submit" class="btn" style="width: 100%; font-size: 18px; padding: 15px;" id="assessBtn">
+            🔍 Analyze My Stroke Risk
+        </button>
+    </form>
+</div>
+
+<!-- Results will be displayed here -->
+<div class="card" id="resultsContainer" style="display: none;">
+    <div id="loadingIndicator" style="text-align: center; padding: 40px;">
+        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #228B22; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 20px; color: #1e3a5f; font-size: 18px;">🔄 Analyzing your health data...</p>
+        <div id="loadingSteps" style="margin-top: 15px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <p class="loading-step" style="color: #6c757d; font-size: 14px; margin-bottom: 8px; opacity: 0; transition: opacity 0.5s;">✓ Processing input data...</p>
+            <p class="loading-step" style="color: #6c757d; font-size: 14px; margin-bottom: 8px; opacity: 0; transition: opacity 0.5s;">✓ Calculating risk factors...</p>
+            <p class="loading-step" style="color: #6c757d; font-size: 14px; margin-bottom: 8px; opacity: 0; transition: opacity 0.5s;">✓ Generating personalized recommendations...</p>
+            <p class="loading-step" style="color: #6c757d; font-size: 14px; margin-bottom: 8px; opacity: 0; transition: opacity 0.5s;">✓ Preparing results...</p>
+        </div>
+    </div>
+    
+    <div id="assessmentResults" style="display: none;">
+        <!-- Results will be populated here -->
+    </div>
+</div>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.risk-level {
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.risk-low { 
+    background: linear-gradient(45deg, #d4edda, #c3e6cb); 
+    color: #155724; 
+    border: 2px solid #b8daff;
+}
+.risk-moderate { 
+    background: linear-gradient(45deg, #fff3cd, #ffeaa7); 
+    color: #856404; 
+    border: 2px solid #ffc107;
+}
+.risk-high { 
+    background: linear-gradient(45deg, #f8d7da, #f5c6cb); 
+    color: #721c24; 
+    border: 2px solid #dc3545;
+}
+.risk-very-high { 
+    background: linear-gradient(45deg, #f5c6cb, #f1b0b7); 
+    color: #491217; 
+    border: 2px solid #dc3545;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+</style>
+
+<script>
+document.getElementById('assessmentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Show results container and loading
+    const resultsContainer = document.getElementById('resultsContainer');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const assessmentResults = document.getElementById('assessmentResults');
+    const assessBtn = document.getElementById('assessBtn');
+    
+    resultsContainer.style.display = 'block';
+    loadingIndicator.style.display = 'block';
+    assessmentResults.style.display = 'none';
+    assessBtn.disabled = true;
+    assessBtn.textContent = '🔄 Analyzing...';
+    
+    // Scroll to results
+    resultsContainer.scrollIntoView({ behavior: 'smooth' });
+    
+    // Show loading steps with animation
+    const loadingSteps = document.querySelectorAll('.loading-step');
+    let stepDelay = 300;
+    
+    loadingSteps.forEach((step, index) => {
+        setTimeout(() => {
+            step.style.opacity = '1';
+        }, stepDelay * (index + 1));
+    });
+    
+    try {
+        const response = await makeRequest('{{ url_for("assessment") }}', data);
+        
+        if (response.success) {
+            displayResults(data, response.result, response.assessment_id);
+        } else {
+            showAlert(response.message, 'error');
+            resultsContainer.style.display = 'none';
+        }
+    } catch (error) {
+        showAlert('Assessment failed. Please try again.', 'error');
+        resultsContainer.style.display = 'none';
+    } finally {
+        if (!resultsContainer.style.display === 'none') {
+            loadingIndicator.style.display = 'none';
+            assessmentResults.style.display = 'block';
+        }
+        assessBtn.disabled = false;
+        assessBtn.textContent = '🔍 Analyze My Stroke Risk';
+    }
+});
+
+function displayResults(patientData, result, assessmentId) {
+    const resultsDiv = document.getElementById('assessmentResults');
+    
+    const riskEmojis = {
+        'Low': '🟢',
+        'Moderate': '🟡', 
+        'High': '🔴',
+        'Very High': '🚨'
+    };
+    
+    // Create HTML elements directly for better performance
+    const resultHTML = `
+        <h2>📊 Your Stroke Risk Assessment Results</h2>
+        
+        <div class="risk-level risk-${result.risk_level.toLowerCase().replace(' ', '-')}">
+            ${riskEmojis[result.risk_level]} Risk Level: ${result.risk_level}
+            <br><small>Risk Score: ${result.risk_score}/1.000</small>
+        </div>
+        
+        <div class="grid-2">
+            <div>
+                <h3 style="color: #228B22; margin-bottom: 15px;">👤 Patient Summary</h3>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <p><strong>Age:</strong> ${patientData.age} years</p>
+                    <p><strong>Gender:</strong> ${patientData.gender}</p>
+                    <p><strong>Hypertension:</strong> ${patientData.hypertension == '1' ? 'Yes' : 'No'}</p>
+                    <p><strong>Heart Disease:</strong> ${patientData.heart_disease == '1' ? 'Yes' : 'No'}</p>
+                    <p><strong>Glucose Level:</strong> ${patientData.avg_glucose_level} mg/dL</p>
+                    <p><strong>BMI:</strong> ${patientData.bmi}</p>
+                    <p><strong>Smoking Status:</strong> ${patientData.smoking_status}</p>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="color: #228B22; margin-bottom: 15px;">⚠️ Risk Factors</h3>
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px;">
+                    ${result.risk_factors.length > 0 ? 
+                        `<div style="background: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #dc3545;">
+                            <strong>Most Significant Risk Factor:</strong><br>
+                            ${result.most_significant_factor || result.risk_factors[0]}
+                        </div>
+                        ${result.risk_factors.map(factor => `<p>• ${factor}</p>`).join('')}` :
+                        '<p style="color: #28a745;">✅ No significant risk factors identified</p>'
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h3 style="color: #228B22; margin-bottom: 15px;">💡 Personalized Recommendations</h3>
+            <div style="background: #d4edda; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745;">
+                ${result.recommendations.map((rec, index) => 
+                    `<p style="margin-bottom: 8px; ${rec.includes('🚨') ? 'color: #dc3545; font-weight: bold;' : ''}">${index + 1}. ${rec}</p>`
+                ).join('')}
+            </div>
+        </div>
+        
+        ${result.risk_level === 'High' || result.risk_level === 'Very High' ? `
+        <div style="background: #f8d7da; padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 5px solid #dc3545;">
+            <h4 style="color: #721c24; margin-bottom: 10px;">🚨 URGENT NOTICE</h4>
+            <p style="color: #721c24;">Your assessment indicates a ${result.risk_level.toLowerCase()} stroke risk. Please consult with a healthcare professional as soon as possible for a comprehensive evaluation and personalized treatment plan.</p>
+            <a href="{{ url_for('find_health_facility') }}" class="btn" style="margin-top: 10px; background: #dc3545;">
+                🏥 Find Nearest Health Facility
+            </a>
+        </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">📊 Return to Dashboard</a>
+            <a href="/assessment/${assessmentId}" class="btn" style="margin-left: 10px;">👁️ View Detailed Report</a>
+        </div>
+        
+        <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; margin-top: 20px;">
+            <p style="color: #0c5460; font-size: 14px; text-align: center;">
+                <strong>Assessment ID:</strong> ${assessmentId} | 
+                <strong>Date:</strong> ${new Date().toLocaleDateString()} |
+                <strong>Time:</strong> ${new Date().toLocaleTimeString()}
+            </p>
+        </div>
+    `;
+    
+    // Set the HTML content directly for better performance
+    resultsDiv.innerHTML = resultHTML;
+    
+    // Show the results
+    document.getElementById('loadingIndicator').style.display = 'none';
+    resultsDiv.style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-calculate age from DOB and load previous assessment data
+    fetchUserDataAndPreviousAssessment();
+    
+    // BMI Calculator helper
+    document.getElementById('bmi').addEventListener('focus', function() {
+        if (!document.querySelector('.bmi-calculator')) {
+            const calculator = document.createElement('div');
+            calculator.className = 'bmi-calculator';
+            calculator.innerHTML = `
+                <small style="color: #1e3a5f; margin-top: 5px; display: block;">
+                    💡 Don't know your BMI? 
+                    <a href="#" onclick="showBMICalculator()" style="color: #228B22;">Calculate it here</a>
+                </small>
+            `;
+            this.parentNode.appendChild(calculator);
+        }
+    });
+});
+
+// Fetch user's date of birth and previous assessment data
+async function fetchUserDataAndPreviousAssessment() {
+    try {
+        // First get user info for DOB
+        const userResponse = await fetch('{{ url_for("get_user_info") }}');
+        const userData = await userResponse.json();
+        
+        if (userData.success && userData.date_of_birth) {
+            const dob = new Date(userData.date_of_birth);
+            const today = new Date();
+            
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDiff = today.getMonth() - dob.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            
+            document.getElementById('age').value = age;
+        } else {
+            // If DOB not available, make the age field editable
+            const ageField = document.getElementById('age');
+            ageField.readOnly = false;
+            ageField.style.backgroundColor = '';
+            ageField.placeholder = 'Enter your age';
+            ageField.nextElementSibling.textContent = 'Please enter your age manually';
+        }
+        
+        // Now try to get previous assessment data
+        const historyResponse = await fetch('{{ url_for("get_last_assessment") }}');
+        const historyData = await historyResponse.json();
+        
+        if (historyData.success && historyData.assessment) {
+            const assessment = historyData.assessment;
+            
+            // Auto-fill gender if available
+            if (assessment.gender) {
+                document.getElementById('gender').value = assessment.gender;
+            }
+            
+            // Show message that data was pre-filled
+            showAlert('Some fields were pre-filled from your previous assessment', 'info');
+        }
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        // Make the age field editable in case of error
+        const ageField = document.getElementById('age');
+        ageField.readOnly = false;
+        ageField.style.backgroundColor = '';
+        ageField.placeholder = 'Enter your age';
+    }
+}
+
+function showBMICalculator() {
+    const height = prompt("Enter your height in centimeters (e.g., 170):");
+    const weight = prompt("Enter your weight in kilograms (e.g., 70):");
+    
+    if (height && weight) {
+        const heightM = height / 100;
+        const bmi = (weight / (heightM * heightM)).toFixed(1);
+        document.getElementById('bmi').value = bmi;
+        showAlert(`Your calculated BMI is ${bmi}`, 'info');
+    }
+}
+
+// Form validation helpers
+document.getElementById('age').addEventListener('input', function() {
+    const age = parseInt(this.value);
+    if (age >= 65) {
+        showAlert('Age 65+ is considered a significant stroke risk factor', 'info');
+    }
+});
+
+document.getElementById('avg_glucose_level').addEventListener('input', function() {
+    const glucose = parseFloat(this.value);
+    if (glucose >= 126) {
+        showAlert('Glucose level ≥126 mg/dL indicates diabetes, a major stroke risk factor', 'info');
+    }
+});
+</script>
+{% endblock %}
